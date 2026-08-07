@@ -1,0 +1,58 @@
+{
+  "name": "tiltmeter",
+  "version": "0.1.0-alpha.0",
+  "description": "Tell an operator when a new model release moves their agent harness off true. Deterministic, pre-registered, reproducible from a pinned commit.",
+  "license": "MIT",
+  "author": "James Lorenz Santos",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamessuuu/tiltmeter.git",
+    "directory": "packages/tiltmeter"
+  },
+  "homepage": "https://github.com/jamessuuu/tiltmeter#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "tiltmeter": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./testing": {
+        "types": "./dist/testing/index.d.ts",
+        "default": "./dist/testing/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.build.json --noEmit",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "commander": "^14.0.0",
+    "zod": "^4.0.0"
+  },
+  "keywords": [
+    "llm-eval",
+    "agent-harness",
+    "regression-testing",
+    "anthropic",
+    "claude",
+    "observability"
+  ]
+}
