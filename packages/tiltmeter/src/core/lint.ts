@@ -3,10 +3,14 @@
  * IMMUTABILITY vs git (fail on any in-place edit of a previously
  * published item), provenance level present, maxTokens headroom." Schema
  * is already enforced by `parseSuite` (Zod, SPEC §13) before any of this
- * runs. This module is pure (SPEC §6) — the git side of the immutability
- * check (finding the previously-committed version of a suite file) is
- * `src/node/git.ts`'s job; this file only knows how to compare two
- * already-resolved item sets and shape the suite-structure checks.
+ * runs. This module is pure (SPEC §6) — resolving what the historical
+ * baseline actually IS (the last published reading's suite, preferably; a
+ * previous commit otherwise; a stated failure if neither can be
+ * established) is `src/cli/commands/lint.ts`'s job, backed by
+ * `src/node/git.ts` and `src/cli/verify.ts`'s reading-corpus reader. This
+ * file only knows how to compare two already-resolved item sets, shape the
+ * suite-structure checks, and turn an unresolved baseline into a failing
+ * issue rather than a silent pass.
  */
 import { jcsCanonical } from "./canonical.js";
 import { activeItems, meetsNegativesQuota, type Item, type Suite } from "./suite.js";
@@ -16,7 +20,18 @@ export type LintIssueCode =
   | "maxTokens-headroom"
   | "dangling-artifact-ref"
   | "item-edited-in-place"
-  | "item-removed";
+  | "item-removed"
+  /**
+   * The historical baseline the immutability check needs COULD NOT be
+   * established, even though one should exist (there is prior git history
+   * for this suite file). This is deliberately its own failing code rather
+   * than a silent pass: an unresolvable baseline must never be treated as
+   * "nothing to compare" — that would reopen the exact hole this checker
+   * exists to close. The one case that is NOT this code is a suite with no
+   * prior commit at all (a genuine first publish) — that legitimately has
+   * nothing to compare and stays a pass.
+   */
+  | "immutability-baseline-unresolved";
 
 export interface LintIssue {
   code: LintIssueCode;
@@ -127,8 +142,31 @@ export function checkItemImmutability(currentItems: readonly Item[], historicalI
   return issues;
 }
 
-/** Combine the structural checks with an already-resolved immutability check into one suite-level verdict. `historicalItems` is `undefined` when the suite has no prior committed version at all (its very first commit) — nothing can have been edited in place yet. */
-export function lintSuite(suite: Suite, historicalItems: readonly Item[] | undefined): LintResult {
+/**
+ * Combine the structural checks with an already-resolved immutability check
+ * into one suite-level verdict. `historicalItems` is `undefined` when the
+ * suite has no prior committed version at all (its very first commit) —
+ * nothing can have been edited in place yet, so that is a legitimate pass.
+ *
+ * `unresolvedBaselineReason`, when set by the caller (`src/cli/commands/lint.ts`'s
+ * git/reading resolution), means a baseline SHOULD exist (there is prior
+ * history for this suite) but could not be established — a schema-mismatch
+ * on a historical revision, an unreadable commit, or a reading whose pinned
+ * `suiteSpecHash` no longer resolves to any commit. That is always a
+ * failing outcome, never silently treated as "nothing to compare": an
+ * unresolvable baseline is exactly the gap a bad actor would want.
+ */
+export function lintSuite(
+  suite: Suite,
+  historicalItems: readonly Item[] | undefined,
+  unresolvedBaselineReason?: string,
+): LintResult {
   const issues = [...lintStructure(suite), ...checkItemImmutability(suite.items, historicalItems ?? [])];
+  if (unresolvedBaselineReason !== undefined) {
+    issues.push({
+      code: "immutability-baseline-unresolved",
+      message: `could not establish a historical baseline to check item immutability against: ${unresolvedBaselineReason}`,
+    });
+  }
   return { suiteId: suite.id, ok: issues.length === 0, issues };
 }

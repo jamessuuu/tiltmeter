@@ -18,7 +18,17 @@ export type ErrorCode =
   /** M5 — a suite item's canonical bytes changed in place instead of being retired (SPEC §3.1 Decision 2). */
   | "E_IMMUTABLE_ITEM"
   /** M4 — a model provider request failed; the error is reported by class only, never the raw provider string/body. */
-  | "E_PROVIDER";
+  | "E_PROVIDER"
+  /**
+   * A `--resume` found a cell left `status: "pending"` (customIds recorded,
+   * no `batchId`) by a PREVIOUS process — meaning that process may have
+   * called `client.submitBatch` and then been killed before persisting the
+   * returned `batchId`. There is no way to ask the provider "did you
+   * already receive this?" without a `batchId` to poll, so resuming refuses
+   * to guess and blindly resubmit (which risks a duplicate charge) rather
+   * than silently proceeding either way.
+   */
+  | "E_AMBIGUOUS_PENDING_BATCH";
 
 export class TiltmeterError extends Error {
   readonly code: ErrorCode;

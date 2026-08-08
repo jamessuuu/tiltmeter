@@ -61,13 +61,28 @@ different snapshot between run groups, that is published as a
 `provider-substitution` event and every comparison across it is
 `cannot-attribute` — never averaged through as if nothing happened.
 
-## Crash / resume never double-spends — applies from M4
+## Crash / resume never silently double-spends — applies from M4
 
 `run --resume` reconstructs a reading from committed batch ids and never
 re-submits a cell that already has one recorded. Deterministic
-`custom_id = sha256(runGroup, suite, item, trial)` is written **before**
-submission, so a crash between submit and write cannot cause a duplicate
-charge.
+`custom_id = sha256(runGroup, suite, item, trial)` is computed and
+persisted to `run.json` as a `status: "pending"` record **before**
+`submitBatch` is ever called — not merely computed in memory and written
+afterward — so a crash before the provider ever sees the request leaves
+nothing to accidentally resubmit blindly.
+
+That said, no client-side write can fully close the gap between "the
+provider accepted the batch" (cost incurred) and "the returned batch id
+reached this process's disk" — the Anthropic Batch API has no
+client-supplied idempotency key, so there is no way to ask the provider
+"did you already receive this?" without a `batchId` to poll. Rather than
+overstate that boundary, `--resume` treats it as an explicit decision
+point instead of a guess: a cell left `pending` with no `batchId` by an
+INTERRUPTED prior process refuses to resubmit
+(`E_AMBIGUOUS_PENDING_BATCH`, `tiltmeter run` exits `RESUME_AMBIGUOUS`)
+and prints the exact `custom_id`s to check on the Anthropic console before
+retrying — never a silent guess in either direction. The blast radius of
+getting this wrong even once is capped by `maxCellUsd` ($1.50) regardless.
 
 ## Cost caps — provider console limit + runner-enforced caps — runner-enforced caps apply from M4; the console workspace limit's runbook lands at M7
 

@@ -203,6 +203,66 @@ describe("tiltmeter run", () => {
     expect(resumeOut.some((l) => l.includes("nothing to do"))).toBe(true);
   });
 
+  it("SPEC §9 / SECURITY.md crash-safety: --resume refuses (never resubmits) a cell an interrupted prior run left \"pending\" with no batchId", async () => {
+    const { io: planIo } = makeIo();
+    await runCli(["plan", "--run-group", "rg-1", "--offline"], planIo, { cwd: dir, env: {} }, { now: NOW }); // default mode: batch
+
+    // Simulate a process that persisted `preparePendingCell`'s record
+    // (customIds recorded — SPEC §9's "written before submission") and was
+    // then killed before ever learning whether `client.submitBatch`
+    // actually reached the provider.
+    mkdirSync(join(dir, "observatory", "readings", "rg-1"), { recursive: true });
+    writeFileSync(
+      join(dir, "observatory", "readings", "rg-1", "run.json"),
+      canonicalStringify({
+        formatVersion: 1,
+        runGroupId: "rg-1",
+        planSuiteSpecHashes: {},
+        startedAt: NOW(),
+        cells: [
+          {
+            suiteId: "demo-suite",
+            cellId: "haiku45",
+            modelIdRequested: "claude-haiku-4-5",
+            mode: "batch",
+            customIds: { "pos-1": ["deadbeef00000000000000000000000000000000000000000000000000000000"] },
+            status: "pending",
+          },
+        ],
+        costUsdSoFar: 0,
+      }),
+    );
+
+    const client = fakeClientAllPass() as FakeModelClient;
+    let submitCount = 0;
+    const originalSubmit = client.submitBatch.bind(client);
+    client.submitBatch = (...args) => {
+      submitCount++;
+      return originalSubmit(...args);
+    };
+
+    const { io, err } = makeIo();
+    const code = await runCli(
+      ["run", "--plan", "rg-1", "--resume"],
+      io,
+      { cwd: dir, env: { ANTHROPIC_API_KEY: "sk-fake" } },
+      { now: NOW, buildClient: () => client },
+    );
+
+    expect(code).toBe(CLI_EXIT.RESUME_AMBIGUOUS);
+    expect(submitCount).toBe(0); // never resubmitted — the whole point
+    expect(err.some((l) => l.includes("pending") && l.includes("deadbeef"))).toBe(true);
+
+    // Nothing new was written — run.json still holds exactly the pending
+    // record the interrupted run left, not a fabricated resubmission.
+    const persisted = JSON.parse(readFileSync(join(dir, "observatory", "readings", "rg-1", "run.json"), "utf8")) as {
+      cells: { status: string; batchId?: string }[];
+    };
+    expect(persisted.cells).toHaveLength(1);
+    expect(persisted.cells[0]?.status).toBe("pending");
+    expect(persisted.cells[0]?.batchId).toBeUndefined();
+  });
+
   it("SPEC §9: a suite edited between plan and run refuses with E_PLAN_STALE (re-plan)", async () => {
     const { io: planIo } = makeIo();
     await runCli(["plan", "--run-group", "rg-1", "--offline", "--mode", "sync"], planIo, { cwd: dir, env: {} }, { now: NOW });

@@ -166,7 +166,7 @@ every other suite draws only from this machine's own `~/.claude`).
 | 429 / 529 / transient 5xx | Full-jitter backoff, ≤3 attempts, `Retry-After` honoured; then the trial is `noResult` — never scored as a fail |
 | Truncated response (`max_tokens`) | `noResult` with reason; `lint` requires `maxTokens ≥ 4×` the largest expected output so this stays rare |
 | Any `noResult > 0` | Reading `status: "partial"`; the denominator is always `items × k` — missing trials are never dropped — and excluded from every aggregate comparison (`cannot-attribute(incomplete)`). Per-item detail is still published |
-| Crash / cancelled workflow after batch submit | `run.json` records batch ids + a deterministic `custom_id` **before** submitting; `run --resume` fetches by id and **never re-submits** |
+| Crash / cancelled workflow after batch submit | A deterministic `custom_id` is persisted to `run.json` as `status: "pending"` **before** the batch is ever submitted; a cell with a recorded `batchId` refuses a new submission. A cell left `pending` with no `batchId` by an interrupted prior process is genuinely ambiguous (no provider-side idempotency key exists to check) — `--resume` refuses to guess rather than risk a duplicate charge (`E_AMBIGUOUS_PENDING_BATCH`) |
 | Batch expires (24h) / partially fails | Expired requests → `noResult`; one retry of only the failed subset within the same run group |
 | Cap tripped mid-run | Stop submitting, write `aborted`, commit, banner on the site. **Never silent** — see `docs/OPERATIONS.md` §4 for exactly what this looks like |
 | Model id 404 / retired | Cell `unavailable`, run continues, every comparison touching it → `cannot-attribute` |

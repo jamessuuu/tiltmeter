@@ -66,6 +66,32 @@ describe("lintSuite — no prior committed version (brand-new suite)", () => {
   });
 });
 
+describe("lintSuite — unresolved historical baseline (SPEC §3.1 Decision 2: never silently pass an unresolvable baseline)", () => {
+  it("fails with immutability-baseline-unresolved when the caller could not establish a baseline that should exist", () => {
+    const suite = buildFixtureSuite({ positiveCount: 4, negativeCount: 3 });
+    const result = lintSuite(suite, undefined, "a previous commit's suite file does not parse under the current schema");
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => i.code === "immutability-baseline-unresolved")).toBe(true);
+  });
+
+  it("stays a pass when no unresolved reason is given — the genuine first-publish case", () => {
+    const suite = buildFixtureSuite({ positiveCount: 4, negativeCount: 3 });
+    const result = lintSuite(suite, undefined, undefined);
+    expect(result.issues.some((i) => i.code === "immutability-baseline-unresolved")).toBe(false);
+  });
+
+  it("an unresolved baseline still fails the suite even if the resolved item set (if any were passed) is otherwise clean", () => {
+    const suite = buildFixtureSuite({ positiveCount: 4, negativeCount: 3 });
+    // Pathological input a resolver should never actually produce (items AND
+    // an unresolved reason together) — even so, the unresolved reason must
+    // win: `lintSuite` never treats "some items happened to be resolvable"
+    // as license to ignore an explicit unresolved signal.
+    const result = lintSuite(suite, suite.items, "defensive: unresolved must always fail regardless of what else was passed");
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((i) => i.code === "immutability-baseline-unresolved")).toBe(true);
+  });
+});
+
 describe("checkItemImmutability (SPEC §3.1 Decision 2: anti-p-hacking)", () => {
   const suite = buildFixtureSuite({ positiveCount: 4, negativeCount: 3 });
   const historical = suite.items;

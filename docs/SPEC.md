@@ -99,7 +99,21 @@ Guessing is never permitted — an artifact with no provenance level fails lint.
 compares each item's canonical bytes against the last published reading's suite and **fails on any
 in-place edit**. Changing an item = retire it (kept in the file, shown on the site) + add a new id.
 This is the anti-p-hacking mechanism: you cannot quietly delete the item the new model failed. It is
-checkable in CI from git alone, which is the whole point.
+checkable in CI from git alone, which is the whole point — and CI actually runs it (`ci.yml`'s
+`suite-lint` stage, `pnpm suite-lint` locally).
+
+The baseline lint compares against is resolved in preference order: (1) the suite as it existed in
+the commit that produced the `suiteSpecHash` pinned by the most recently *published reading* for that
+suite (the same git walk `tiltmeter verify`'s pre-registration proof uses); (2) while no reading yet
+references the suite (true on day one — `observatory/readings/` starts empty), the **previous commit**
+that touched the suite file, walked via git log on that path. Never `HEAD` on its own: once an edit is
+committed, `HEAD` and the working tree are identical, so a `HEAD`-vs-current comparison degenerates
+into comparing a commit to itself and can only ever catch an edit still sitting *uncommitted* — not
+the realistic threat model of a merged PR. A suite with no prior commit at all is a genuine first
+publish (nothing to compare, a real pass, printed as such). Anything else that blocks resolving a
+baseline that should exist — a historical revision that no longer parses under the current schema, a
+reading whose pinned hash resolves to no commit — is a **failing** `immutability-baseline-unresolved`
+issue, never a silent pass.
 
 **Decision 3 — `suiteSpecHash` = sha256 of the canonicalized suite file with only `docs` excluded.**
 Everything that can change behavior or scoring is inside the hash, including retirements and sampling
@@ -338,7 +352,7 @@ release runs only. Recorded here so it is a config change, not a redesign.
 | 429 / 529 / transient 5xx | full-jitter backoff, ≤3 attempts, `Retry-After` honoured; then the **trial** is `noResult` — never scored as a fail |
 | Truncated response (`max_tokens`) | `noResult` with reason; lint requires `maxTokens ≥ 4×` the largest expected output so this stays rare |
 | Any `noResult > 0` | reading `status: "partial"`; **denominator is always `items × k`** — missing trials are never dropped (dropping them biases the rate). A partial reading is excluded from every aggregate comparison → `cannot-attribute(incomplete)`. Per-item detail is still published |
-| Crash / cancelled workflow after batch submit | `run.json` records batch ids + deterministic `custom_id = sha256(runGroup,suite,item,trial)` **before** submitting. `run --resume` fetches by id and **never re-submits** — the duplicate-spend guard. A cell with a recorded batch id refuses a new submission |
+| Crash / cancelled workflow after batch submit | Deterministic `custom_id = sha256(runGroup,suite,item,trial)` is persisted to `run.json` as a `status: "pending"` record **before** `submitBatch` is called (not merely computed in memory and written afterward). A cell with a recorded `batchId` refuses a new submission — the duplicate-spend guard `run --resume` checks first. A cell left `pending` with **no** `batchId` by an interrupted prior process is genuinely ambiguous (no client-supplied idempotency key exists on the provider's Batch API to ask "did you already receive this?") — `--resume` refuses to guess and exits `RESUME_AMBIGUOUS` (`E_AMBIGUOUS_PENDING_BATCH`) naming the exact `custom_id`s to check on the Anthropic console, rather than silently resubmitting |
 | Batch expires (24h) / partially fails | expired requests → `noResult`; one retry of only the failed `custom_id` set within the same run group, recorded as `attempt: 2` |
 | Cap tripped mid-run | stop submitting, write `aborted`, commit, banner on the site. Never silent |
 | Model id 404 / retired | cell `unavailable`, run continues, comparisons touching it → `cannot-attribute` |
@@ -450,7 +464,8 @@ any page ☐ no ranking/leaderboard UI ☐ every published number carries suite 
 interpretation, site build inputs) ☐ **no unauthenticated write path — there is no write path**
 ☐ WAF rule bound and documented ☐ cost ceiling with fallback: console workspace limit + runner caps +
 `skipped`/`aborted` records ☐ typed error taxonomy (`E_CAP`, `E_PLAN_STALE`, `E_AXIS_CONFLICT`,
-`E_PARTIAL`, `E_PROVENANCE`, `E_IMMUTABLE_ITEM`, `E_PROVIDER`), no provider strings echoed ☐ self-persisted
+`E_PARTIAL`, `E_PROVENANCE`, `E_IMMUTABLE_ITEM`, `E_PROVIDER`, `E_AMBIGUOUS_PENDING_BATCH`), no provider
+strings echoed ☐ self-persisted
 observability = the committed run logs (Hobby keeps runtime logs 1 hour; tiltmeter keeps them forever
 in git) ☐ no DB, and the reason stated ☐ **README failure-mode table** (§9) ☐ SECURITY.md covering
 BYOK handling, the fork-PR secret boundary, and the reverse threat: **suites vendor your artifact text —

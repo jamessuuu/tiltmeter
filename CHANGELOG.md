@@ -589,3 +589,108 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
   **deferred past M0** — every Vercel deploy on this machine is James-gated
   program-wide, and there is no web app to deploy yet in any case; `e2e:smoke`
   is an explicit `echo` no-op until M6 rather than a silently-skipped stage.
+
+### Fixed
+- **Item immutability (SPEC §3.1 Decision 2) was structurally incapable of
+  working, and never ran anywhere.** An adversarial review found three
+  compounding faults, all reproduced before this fix (a temp-repo test that
+  commits a baseline suite, then commits an in-place edit to a
+  previously-published item, then lints — it passed clean on `main` at
+  `2175c56`):
+  1. `packages/tiltmeter/src/cli/commands/lint.ts`'s old `historicalItemsAtHead`
+     compared the on-disk suite against `HEAD`. The instant an edit is
+     *committed* — the realistic threat model, a merged PR — the working
+     tree and `HEAD` are identical, so the comparison degenerates into
+     comparing a commit to itself. It could only ever catch an edit still
+     sitting *uncommitted*, and only if someone happened to run `lint`
+     before committing.
+  2. Nothing ran `tiltmeter lint` in CI. Root `pnpm lint` is ESLint; no
+     stage anywhere linted `observatory/suites/*.suite.json`, despite
+     docs/SPEC.md §12 already (falsely) claiming it did.
+  3. No test could have caught a regression: the old
+     `cli/commands/lint.test.ts` immutability case never committed its
+     edit a second time (never reached the failing path);
+     `observatory.test.ts` passed `historicalItems: undefined` outright;
+     `scripts/pack-check.mjs` ran `tiltmeter lint` in a scratch dir that is
+     never `git init`ed.
+
+  **Fix, all three parts:**
+  - Baseline resolution (`resolveHistoricalBaseline` and friends,
+    `src/cli/commands/lint.ts`) now prefers the suite as it existed in the
+    commit that produced the `suiteSpecHash` pinned by the most recently
+    *published reading* for that suite (walked via the same
+    `findFirstCommitWithHash` `tiltmeter verify`'s pre-registration proof
+    already uses) — SPEC's own "against the last published reading's
+    suite" — and, while `observatory/readings/` has no reading for that
+    suite yet (true on day one by design), falls back to the **previous**
+    commit that touched the suite file, never `HEAD` on its own. Every
+    fallback path is now named in the passing output (e.g. "no published
+    reading yet; comparing against the previous commit touching this
+    file"), never silent. A genuinely first-ever-published suite (no prior
+    commit at all) is still an honest, explicit pass — there is nothing it
+    could have hidden an edit behind. Anything else that blocks resolving a
+    baseline that should exist (a historical revision that no longer
+    parses under the current schema, a reading whose pinned hash resolves
+    to no commit) is a new `core/lint.ts` `immutability-baseline-unresolved`
+    issue — a **failing** outcome, never a silent pass (`lintSuite` gained
+    a third, optional `unresolvedBaselineReason` parameter for exactly
+    this).
+  - `.github/workflows/ci.yml` gained a `suite-lint` stage (`pnpm
+    suite-lint` locally, wired into `package.json`) that runs `tiltmeter
+    lint` over every suite and fails the build red on any violation. Its
+    checkout step also gained `fetch-depth: 0` — the default shallow
+    clone would have silently defeated the git-log walk the whole fix
+    depends on.
+  - New regression coverage that structurally could not have existed
+    before (`packages/tiltmeter/src/cli/commands/lint.test.ts`): commits a
+    baseline suite, THEN commits an in-place edit to a previously-published
+    item, THEN lints — asserts `LINT_FAILED` with `item-edited-in-place`.
+    Sibling tests assert the two legitimate, committed paths still pass
+    (adding a new item; retiring an existing item), plus a test proving the
+    reading-preference actually matters: an edit that slipped through
+    undetected at an earlier commit (before any reading published the
+    suite) is still caught by comparing against the reading-pinned
+    baseline, where a merely-previous-commit comparison would have missed
+    it. `core/lint.test.ts` gained direct coverage of
+    `immutability-baseline-unresolved`.
+
+  Verified against the real repo's own four launch suites post-fix: `pnpm
+  suite-lint` passes clean, each reporting "first commit for this suite
+  file — nothing to compare yet" (all four have exactly one commit in their
+  history to date) — the fix does not regress the suites this project
+  already ships.
+
+- **The batch crash-safety claim ("recorded before submitting") was
+  slightly overstated.** `core/batch.ts`'s `submitCellBatch` computed
+  deterministic `customId`s in memory but did not persist anything until
+  *after* `client.submitBatch` resolved; only the caller
+  (`core/run-orchestrator.ts`) then persisted `{customIds, batchId}`. A
+  process killed between the provider accepting a batch (cost incurred)
+  and that write left `run.json` with no record of the attempt at all, so
+  a later `--resume` would recompute the same deterministic `customId`s and
+  submit again — a real, if `maxCellUsd`-capped ($1.50), double charge.
+  SECURITY.md's "written **before** submission, so a crash between submit
+  and write cannot cause a duplicate charge" was true in spirit but not in
+  the code.
+
+  Shrunk the window rather than just reworded the claim, since it was
+  cleanly achievable without touching the `ModelClient` interface:
+  `core/batch.ts` gained `preparePendingCell` (pure — computes and returns
+  a `status: "pending"` record with `customIds` populated, no network
+  call), and `core/run-orchestrator.ts` now persists that pending record
+  via `onCellUpdate` **before** calling `submitCellBatch`, so a crash
+  between "provider accepted" and "batchId written" now leaves an explicit,
+  checkable `pending` record with the exact `customId`s that may already be
+  in flight — instead of leaving no record at all. Because a `pending`
+  record with no `batchId` is genuinely ambiguous (there is no way to ask
+  the provider "did you already receive this?" without a `batchId` to poll,
+  and the Anthropic Batch API has no client-supplied idempotency key),
+  `--resume` no longer guesses: encountering a cell left `pending` by a
+  *previous* process is now a refusal (`E_AMBIGUOUS_PENDING_BATCH`,
+  `CLI_EXIT.RESUME_AMBIGUOUS`) with an actionable message naming the exact
+  `customId`s to check on the Anthropic console — never a silent
+  resubmission. A pending record created and submitted within the *same*
+  process invocation is unaffected (no ambiguity yet; nothing else could
+  have raced it). SECURITY.md and docs/SPEC.md §9 updated to describe the
+  real mechanism (persist-before-submit plus a refusal on ambiguity)
+  instead of implying a guarantee the code didn't make.

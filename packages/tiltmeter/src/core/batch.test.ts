@@ -6,6 +6,8 @@ import {
   collectCellBatchResults,
   computeCellCustomIds,
   hasRecordedBatch,
+  isAmbiguousPending,
+  preparePendingCell,
   retryCellBatch,
   submitCellBatch,
   type RunRecordCell,
@@ -57,6 +59,37 @@ describe("hasRecordedBatch / the duplicate-spend guard (SPEC §9)", () => {
   });
 });
 
+describe("preparePendingCell (SPEC §9 / SECURITY.md: customIds recorded before submission)", () => {
+  it("computes customIds and returns a pending record with no batchId and no network call", () => {
+    const cell = preparePendingCell("rg-1", "suite-a", "haiku45", "claude-haiku-4-5", ["item-1", "item-2"], 2);
+    expect(cell.status).toBe("pending");
+    expect(cell.batchId).toBeUndefined();
+    expect(cell.customIds["item-1"]).toEqual(computeCellCustomIds("rg-1", "suite-a", ["item-1", "item-2"], 2)["item-1"]);
+  });
+
+  it("is deterministic — the same inputs always produce the same customIds (so a caller can safely call it twice, before and its own submission)", () => {
+    const a = preparePendingCell("rg-1", "suite-a", "haiku45", "claude-haiku-4-5", ["item-1"], 1);
+    const b = preparePendingCell("rg-1", "suite-a", "haiku45", "claude-haiku-4-5", ["item-1"], 1);
+    expect(a.customIds).toEqual(b.customIds);
+  });
+});
+
+describe("isAmbiguousPending (SPEC §9 / SECURITY.md: refuse to guess after a crash)", () => {
+  it("true for a pending cell with no batchId — the exact state an interrupted submission leaves behind", () => {
+    expect(isAmbiguousPending({ status: "pending", batchId: undefined })).toBe(true);
+  });
+
+  it("false once a batchId is recorded, even if status somehow still reads pending", () => {
+    expect(isAmbiguousPending({ status: "pending", batchId: "batch-123" })).toBe(false);
+  });
+
+  it("false for submitted/complete/aborted/unavailable — only 'pending with no batchId' is ambiguous", () => {
+    expect(isAmbiguousPending({ status: "submitted", batchId: "batch-123" })).toBe(false);
+    expect(isAmbiguousPending({ status: "complete", batchId: "batch-123" })).toBe(false);
+    expect(isAmbiguousPending({ status: "aborted", batchId: undefined })).toBe(false);
+  });
+});
+
 describe("submitCellBatch", () => {
   it("submits a fresh cell and records customIds + the returned batchId", async () => {
     const client = new FakeModelClient({ script: {} });
@@ -65,6 +98,14 @@ describe("submitCellBatch", () => {
     expect(cell.batchId).toBeDefined();
     expect(cell.customIds["item-1"]).toHaveLength(2);
     expect(cell.customIds["item-2"]).toHaveLength(2);
+  });
+
+  it("reuses an already-pending record's customIds verbatim rather than recomputing them (so a persisted pending marker and the submitted batch can never drift)", async () => {
+    const client = new FakeModelClient({ script: {} });
+    const pending = preparePendingCell("rg-1", "suite-a", "haiku45", "claude-haiku-4-5", ["item-1"], 1);
+    const cell = await submitCellBatch(client, "rg-1", "suite-a", "haiku45", "claude-haiku-4-5", [plan("item-1")], 1, pending);
+    expect(cell.status).toBe("submitted");
+    expect(cell.customIds).toEqual(pending.customIds);
   });
 
   it("SPEC §9 duplicate-spend guard: a cell with a recorded batchId is returned unchanged, never resubmitted", async () => {

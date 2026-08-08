@@ -16,5 +16,7 @@ export const CLI_EXIT = {
   CAP_REFUSED: 3,
   USAGE: 4,
   PLAN_STALE: 5,
+  /** `E_AMBIGUOUS_PENDING_BATCH`: `--resume` found a cell a previous, crashed process left `pending` with no `batchId` — refuses to guess whether it was already submitted rather than risking a duplicate charge. */
+  RESUME_AMBIGUOUS: 6,
 } as const;
 export type CliExitCode = (typeof CLI_EXIT)[keyof typeof CLI_EXIT];

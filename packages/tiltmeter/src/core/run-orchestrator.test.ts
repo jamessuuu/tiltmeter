@@ -93,6 +93,78 @@ describe("executeRunGroup — batch mode + resume (SPEC §9 duplicate-spend guar
     expect(result.runRecord.cells[0]?.batchId).toBeDefined();
   });
 
+  it("SPEC §9 / SECURITY.md crash-safety: persists a 'pending' record (via onCellUpdate) BEFORE calling client.submitBatch", async () => {
+    const suite = buildFixtureSuite({ positiveCount: 2, negativeCount: 3, k: 1 });
+    const client = new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) });
+    const cellInput = await cellInputFor(
+      { suite, presentation: FIXTURE_PRESENTATION, entry: { cellId: "haiku45", modelIdRequested: "claude-haiku-4-5", role: "standing" } },
+      client,
+    );
+
+    const updates: string[] = [];
+    let submitCalled = false;
+    const originalSubmit = client.submitBatch.bind(client);
+    client.submitBatch = (...args) => {
+      submitCalled = true;
+      // At the moment of submission, onCellUpdate must ALREADY have fired
+      // at least once with a "pending" record — i.e. the write happened
+      // strictly before this network call, not after.
+      expect(updates).toContain("pending");
+      return originalSubmit(...args);
+    };
+
+    await executeRunGroup({
+      ...baseOptions("batch"),
+      client,
+      cells: [cellInput],
+      onCellUpdate: (cell) => {
+        updates.push(cell.status);
+      },
+    });
+
+    expect(submitCalled).toBe(true);
+    expect(updates[0]).toBe("pending"); // the very first persisted state, before any network call
+  });
+
+  it("SPEC §9 / SECURITY.md crash-safety: --resume refuses (never resubmits) a cell left 'pending' with no batchId by an interrupted prior process", async () => {
+    const suite = buildFixtureSuite({ positiveCount: 2, negativeCount: 3, k: 1 });
+    const client = new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) });
+    const cellInput = await cellInputFor(
+      { suite, presentation: FIXTURE_PRESENTATION, entry: { cellId: "haiku45", modelIdRequested: "claude-haiku-4-5", role: "standing" } },
+      client,
+    );
+
+    let submitCount = 0;
+    const originalSubmit = client.submitBatch.bind(client);
+    client.submitBatch = (...args) => {
+      submitCount++;
+      return originalSubmit(...args);
+    };
+
+    const ambiguousRunRecord = {
+      formatVersion: 1 as const,
+      runGroupId: "rg-1",
+      planSuiteSpecHashes: {},
+      startedAt: "2026-08-08T00:00:00.000Z",
+      cells: [
+        {
+          suiteId: cellInput.suite.id,
+          cellId: "haiku45",
+          modelIdRequested: "claude-haiku-4-5",
+          mode: "batch" as const,
+          customIds: { [suite.items[0]?.id ?? "item-1"]: ["deadbeef"] },
+          status: "pending" as const,
+        },
+      ],
+      costUsdSoFar: 0,
+    };
+
+    await expect(
+      executeRunGroup({ ...baseOptions("batch"), client, cells: [cellInput], existingRunRecord: ambiguousRunRecord }),
+    ).rejects.toMatchObject({ code: "E_AMBIGUOUS_PENDING_BATCH" });
+    expect(submitCount).toBe(0);
+  });
+
   it("resuming with a recorded batchId never resubmits (SPEC §9: 'a cell with a recorded batch id refuses a new submission')", async () => {
     const suite = buildFixtureSuite({ positiveCount: 2, negativeCount: 2, k: 1 });
     const client = new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) });

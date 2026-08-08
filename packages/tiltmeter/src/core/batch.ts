@@ -1,11 +1,16 @@
 /**
  * Batch orchestration (SPEC §9): deterministic `custom_id`s recorded before
- * submission, the duplicate-spend guard (`run --resume` never resubmits a
- * cell with a recorded batch id), and the one-retry-of-the-failed-subset
- * rule for a batch that partially expires/errors. `core/run.ts`'s
- * `buildReadingFromTrials` does the actual reading assembly; this module's
- * job is purely the batch protocol around it — submit, poll, collect,
- * retry-once, map back to `(itemId, attempt)`.
+ * submission (`preparePendingCell` — pure, no network call, meant to be
+ * persisted by the caller BEFORE `submitCellBatch` is ever invoked), the
+ * duplicate-spend guard (`run --resume` never resubmits a cell with a
+ * recorded batch id), a refusal signal for the one gap that guard alone
+ * cannot close (`isAmbiguousPending` — a cell left `pending` with no
+ * `batchId` by a process that may have crashed mid-submission), and the
+ * one-retry-of-the-failed-subset rule for a batch that partially
+ * expires/errors. `core/run.ts`'s `buildReadingFromTrials` does the actual
+ * reading assembly; this module's job is purely the batch protocol around
+ * it — prepare, submit, poll, collect, retry-once, map back to
+ * `(itemId, attempt)`.
  */
 import { z } from "zod";
 import { sha256Hex } from "./sha256.js";
@@ -96,14 +101,50 @@ export function hasRecordedBatch(cell: Pick<RunRecordCell, "batchId">): boolean 
 }
 
 /**
+ * True for a cell a PREVIOUS process left `status: "pending"` with no
+ * `batchId` — `customIds` were computed and (as of the fix below) persisted
+ * before that process ever called `client.submitBatch`, but the process was
+ * killed before it could persist the returned `batchId` (or before it ever
+ * made the call at all). There is no way to tell those two cases apart
+ * without a `batchId` to poll the provider with, so this is the signal
+ * `core/run-orchestrator.ts` uses to refuse an automatic resubmission
+ * rather than risk a duplicate charge.
+ */
+export function isAmbiguousPending(cell: Pick<RunRecordCell, "status" | "batchId">): boolean {
+  return cell.status === "pending" && cell.batchId === undefined;
+}
+
+/**
+ * Pure — computes a cell's deterministic `customId`s and returns a
+ * `status: "pending"` record with NO network call. SPEC §9 / SECURITY.md's
+ * "custom_id … written before submission": the caller persists this record
+ * (via `onCellUpdate`) BEFORE ever calling `submitCellBatch`, so a crash
+ * between "provider accepted the batch" and "batchId written to disk"
+ * leaves an explicit, checkable `pending` record with the exact `customId`s
+ * that may already be in flight — never nothing at all.
+ */
+export function preparePendingCell(
+  runGroupId: string,
+  suiteId: string,
+  cellId: string,
+  modelIdRequested: string,
+  itemIds: readonly string[],
+  k: number,
+): RunRecordCell {
+  const customIds = computeCellCustomIds(runGroupId, suiteId, itemIds, k);
+  return { suiteId, cellId, modelIdRequested, mode: "batch", customIds, status: "pending" };
+}
+
+/**
  * Submit a cell's full batch (every active item × k attempts) UNLESS it
  * already has a recorded batch id (the guard above) — in which case the
  * existing record is returned completely unchanged and `client.submitBatch`
- * is never called. Callers MUST persist the returned record (specifically
- * its `customIds`, computed here before any network call, and then its
- * `batchId` the instant the submission call returns) before doing anything
- * else — that ordering is what SPEC §9 means by "recorded before
- * submitting" surviving a crash.
+ * is never called. `existing` is normally the record `preparePendingCell`
+ * just produced (its `customIds` are reused verbatim, never recomputed, so
+ * the persisted-before-submit record and the one actually submitted can
+ * never drift) — `existing === undefined` (or with no `customIds` of its
+ * own) falls back to computing them here, which existing callers/tests rely
+ * on.
  */
 export async function submitCellBatch(
   client: ModelClient,
@@ -118,7 +159,10 @@ export async function submitCellBatch(
   if (existing !== undefined && hasRecordedBatch(existing)) return existing;
 
   const itemIds = plans.map((p) => p.itemId);
-  const customIds = computeCellCustomIds(runGroupId, suiteId, itemIds, k);
+  const customIds =
+    existing !== undefined && Object.keys(existing.customIds).length > 0
+      ? existing.customIds
+      : computeCellCustomIds(runGroupId, suiteId, itemIds, k);
   const requests: BatchRequestItem[] = [];
   for (const plan of plans) {
     const ids = customIds[plan.itemId] ?? [];

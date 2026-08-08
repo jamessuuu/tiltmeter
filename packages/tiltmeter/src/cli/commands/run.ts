@@ -162,24 +162,38 @@ export async function runRunCommand(io: CliIo, options: RunCommandOptions, deps:
   const monthToDateUsd = computeMonthToDateUsd(readIndexChain(observatoryDir), monthOf(nowIso));
   const pricing = readPricingManifest(observatoryDir, plan.pricingManifestId);
 
-  const result = await executeRunGroup({
-    runGroupId: options.runGroupId,
-    harnessCommit: deps.harnessCommit,
-    runnerVersion: TILTMETER_VERSION,
-    runnerBehaviorVersion: RUNNER_BEHAVIOR_VERSION,
-    mode,
-    caps: plan.caps,
-    monthToDateUsd,
-    pricing,
-    effectiveDate: nowIso.slice(0, 10),
-    now: deps.now,
-    client,
-    cells: pendingCells,
-    existingRunRecord,
-    onCellUpdate: (cell) => {
-      writeRunRecord(observatoryDir, mergeCellIntoRecord(existingRunRecord, options.runGroupId, plan, cell));
-    },
-  });
+  let result: Awaited<ReturnType<typeof executeRunGroup>>;
+  try {
+    result = await executeRunGroup({
+      runGroupId: options.runGroupId,
+      harnessCommit: deps.harnessCommit,
+      runnerVersion: TILTMETER_VERSION,
+      runnerBehaviorVersion: RUNNER_BEHAVIOR_VERSION,
+      mode,
+      caps: plan.caps,
+      monthToDateUsd,
+      pricing,
+      effectiveDate: nowIso.slice(0, 10),
+      now: deps.now,
+      client,
+      cells: pendingCells,
+      existingRunRecord,
+      onCellUpdate: (cell) => {
+        writeRunRecord(observatoryDir, mergeCellIntoRecord(existingRunRecord, options.runGroupId, plan, cell));
+      },
+    });
+  } catch (error) {
+    // SPEC §9 / SECURITY.md: a cell left "pending" by an interrupted prior
+    // run is genuinely ambiguous (it may already have reached the
+    // provider) — refuse to guess rather than risk a duplicate charge.
+    // Nothing new is written here; run.json still holds exactly the
+    // pending record the interrupted run last persisted.
+    if (isTiltmeterError(error) && error.code === "E_AMBIGUOUS_PENDING_BATCH") {
+      io.stderr(`tiltmeter run --resume: ${error.message}`);
+      return CLI_EXIT.RESUME_AMBIGUOUS;
+    }
+    throw error;
+  }
 
   for (const reading of result.readings) writeReadingFile(observatoryDir, reading);
   writeRunRecord(observatoryDir, result.runRecord);

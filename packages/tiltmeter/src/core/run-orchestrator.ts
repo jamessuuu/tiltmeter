@@ -23,12 +23,15 @@ import {
 } from "./run.js";
 import {
   collectCellBatchResults,
+  isAmbiguousPending,
+  preparePendingCell,
   retryCellBatch,
   submitCellBatch,
   type RunRecord,
   type RunRecordCell,
 } from "./batch.js";
 import { capBreachAfterCell, type Caps } from "./caps.js";
+import { TiltmeterError } from "./errors.js";
 import { priceUsage, selectPricingRow, type PricingManifest } from "./pricing.js";
 import type { PanelEntry, PlanCell } from "./plan.js";
 
@@ -164,6 +167,35 @@ export async function executeRunGroup(options: RunGroupOptions): Promise<RunGrou
       const plans = renderPresentation(cellInput.suite, cellInput.presentation);
       const existing = findExistingCell(options.existingRunRecord, cellInput.suite.id, cellInput.entry.cellId);
 
+      // SPEC §9 / SECURITY.md's crash-safety claim, made real: a cell a
+      // PREVIOUS process left `pending` (customIds recorded, no batchId —
+      // see `preparePendingCell` below) is ambiguous. That process may have
+      // called `client.submitBatch` and been killed before persisting the
+      // returned batchId, or may never have called it at all — there is no
+      // batchId to poll the provider with to tell those apart. Guessing
+      // either way risks a duplicate charge, so `--resume` refuses instead.
+      if (existing !== undefined && isAmbiguousPending(existing)) {
+        throw new TiltmeterError(
+          "E_AMBIGUOUS_PENDING_BATCH",
+          `cell "${cellInput.suite.id}"/"${cellInput.entry.cellId}" was left "pending" by an interrupted run — ` +
+            `a batch submission may already have reached the provider before the crash. Check the Anthropic ` +
+            `console for a batch containing these custom ids before resuming: ${Object.values(existing.customIds).flat().join(", ")}`,
+        );
+      }
+
+      // Persist customIds + a "pending" marker BEFORE the network call
+      // (SPEC §9 / SECURITY.md: "written before submission") — a crash
+      // between the provider accepting this batch and the eventual
+      // `batchId` write now leaves the exact pending record above, not
+      // nothing. `existing` (undefined, or already `submitted`/`complete`
+      // from a prior successful attempt) is preserved as the base:
+      // `submitCellBatch`'s own `hasRecordedBatch` guard still applies.
+      const pending = existing ?? preparePendingCell(options.runGroupId, cellInput.suite.id, cellInput.entry.cellId, cellInput.entry.modelIdRequested, items.map((item) => item.id), k);
+      if (existing === undefined) {
+        upsertCellRecord(pending);
+        await notify(options, pending);
+      }
+
       cellRecord = await submitCellBatch(
         options.client,
         options.runGroupId,
@@ -172,7 +204,7 @@ export async function executeRunGroup(options: RunGroupOptions): Promise<RunGrou
         cellInput.entry.modelIdRequested,
         plans,
         k,
-        existing,
+        pending,
       );
       upsertCellRecord(cellRecord);
       await notify(options, cellRecord);

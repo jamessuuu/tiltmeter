@@ -11,6 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, not the default shallow (depth-1) clone: the
+          # suite-lint stage below (and tiltmeter verify's pre-registration
+          # walk) resolve an item-immutability baseline by walking git log
+          # on a suite file's path — a shallow clone would silently make
+          # that walk see only the newest commit, which is exactly the kind
+          # of "looks green, proves nothing" gap SPEC §3.1 Decision 2 exists
+          # to prevent (docs/SPEC.md §3.1, §7).
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -48,6 +57,16 @@ jobs:
       # Publish-shape guards: dist compiles, tarball resolves to dist/.
       - name: build
         run: pnpm build
+      - name: suite-lint
+        # SPEC §3.1 Decision 2 / SECURITY.md: item immutability is
+        # tiltmeter's flagship anti-p-hacking mechanism — "checkable in CI
+        # from git alone, which is the whole point" — but nothing actually
+        # ran it in CI before this stage. Runs `tiltmeter lint` (which
+        # includes the git-backed immutability check, not just schema/quota)
+        # over every suite under observatory/suites/ and fails the build on
+        # any violation, including a resolvable-but-unresolved baseline
+        # (packages/tiltmeter/src/core/lint.ts's `immutability-baseline-unresolved`).
+        run: pnpm suite-lint
       - name: pack-check
         run: pnpm ci:pack-check
       - name: calibration-drift
