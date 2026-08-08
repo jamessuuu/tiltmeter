@@ -6,6 +6,7 @@ function reading(metrics: Record<string, number>, itemIds: string[], overrides: 
   return {
     formatVersion: 1,
     runGroupId: "rg-1",
+    suiteId: "suite-a",
     cellId: "cell-a",
     axes: {
       suiteSpecHash: "hash-suite",

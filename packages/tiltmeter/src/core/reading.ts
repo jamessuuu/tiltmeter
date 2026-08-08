@@ -83,6 +83,8 @@ export type ReadingStatus = z.infer<typeof ReadingStatusSchema>;
 export const ReadingSchema = z.object({
   formatVersion: z.literal(1),
   runGroupId: z.string().min(1),
+  /** SPEC §2 file naming (`readings/<runGroupId>/<suiteId>__<cellId>.json`) — carried in the body too, so a reading is self-describing without relying on its file path. */
+  suiteId: z.string().min(1),
   cellId: z.string().min(1),
   axes: ReadingAxesSchema,
   harnessCommit: z.string().min(1),

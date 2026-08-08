@@ -142,6 +142,7 @@ export async function runSuite(
   const withoutHash = {
     formatVersion: 1 as const,
     runGroupId: ctx.runGroupId,
+    suiteId: suite.id,
     cellId: ctx.cellId,
     axes,
     harnessCommit: ctx.harnessCommit,
