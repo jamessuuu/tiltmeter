@@ -29,6 +29,23 @@ export function fileCommitHistory(repoRoot: string, relPath: string): string[] {
   return out.length === 0 ? [] : out.split("\n");
 }
 
+/**
+ * The repo's current `HEAD` commit SHA (M7) — the real `harnessCommit`
+ * `src/cli/index.ts` (the bin) resolves so a reading's `harnessCommit`
+ * field names an actual commit rather than the `"unknown"` placeholder
+ * tests inject. `undefined` when `cwd` is not (yet) a git repo, or `HEAD`
+ * has no commits yet (a fresh `git init` with nothing committed) — never
+ * throws.
+ */
+export function currentCommit(repoRoot: string): string | undefined {
+  try {
+    const sha = git(repoRoot, ["rev-parse", "HEAD"]);
+    return sha.length === 0 ? undefined : sha;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The file's exact content AT a given commit, or `undefined` if that commit's tree has no such path (e.g. before it was added, or after a since-reverted rename). */
 export function fileContentAtCommit(repoRoot: string, commitSha: string, relPath: string): string | undefined {
   try {

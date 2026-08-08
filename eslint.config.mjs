@@ -45,6 +45,14 @@ export default tseslint.config(
       parserOptions: {
         projectService: {
           allowDefaultProject: ["*.mjs", "scripts/*.mjs", "apps/web/*.mjs"],
+          // M7 added four more repo-maintenance scripts (reading-run,
+          // health-check, release-watch, lint-workflow-secrets) alongside
+          // the existing three (brand, calibration-report, pack-check) —
+          // past tseslint's default limit of 8 default-project files. All
+          // of these are plain, untyped `.mjs` CLI wiring (never part of
+          // the published package), so raising the count is the correct
+          // fix, not narrowing the glob.
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
         },
         tsconfigRootDir: import.meta.dirname,
       },

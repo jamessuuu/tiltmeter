@@ -249,3 +249,6 @@ export {
   type LintIssueCode,
   type LintResult,
 } from "./core/lint.js";
+
+// M7 (SPEC §8/§14): the health.yml CI backstop's pure decision (>14 days stale).
+export { computeHealthState, HEALTH_STALE_THRESHOLD_DAYS, newestRealReadingAt, type HealthState } from "./core/health.js";

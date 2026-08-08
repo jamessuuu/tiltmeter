@@ -1,0 +1,66 @@
+name: reading
+
+# SPEC §8 M7: "reading.yml — schedule: '0 3 * * 1' (weekly) + workflow_dispatch."
+# This is the ONE workflow that ever sees ANTHROPIC_API_KEY, and its
+# reachability is intentionally minimal: schedule (nobody controls the
+# clock) and workflow_dispatch (a repo collaborator with Actions write
+# access, manually). NEVER pull_request / pull_request_target /
+# issue_comment / any event a fork PR or external actor can cause — SPEC
+# §9's fork-PR row, SECURITY.md's "Fork PR / external-contributor secret
+# boundary". `.github/workflows/../ci.yml`'s `lint-workflows` stage
+# (packages/tiltmeter/src/node/workflow-lint.ts) asserts this mechanically
+# on every push/PR, not just by this comment.
+#
+# Committed but never executed by this build (HARD RULE: no live API call,
+# no key use, no network in this session) — `scripts/reading-run.mjs` and
+# the `runScheduledReading` orchestrator it wraps ARE tested end-to-end
+# with FakeModelClient (packages/tiltmeter/src/cli/commands/scheduled-reading.test.ts).
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  reading:
+    if: github.repository == 'jamessuuu/tiltmeter'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter tiltmeter build
+
+      # SPEC §8/§9: this ALWAYS exits 0 on a legitimate outcome — a real
+      # reading, or a cleanly recorded skip (no key / cap reached) — and
+      # ALWAYS leaves something new in observatory/readings/index.json in
+      # either case (the 60-day auto-disable mitigation). A non-zero exit
+      # here means a genuine bug, not an operational skip, and the job goes
+      # red on purpose rather than silently committing nothing.
+      - name: run the scheduled reading (SPEC §8/§9)
+        id: reading
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          RUN_GROUP="rg-$(date -u +%Y%m%d)-1"
+          echo "run-group=$RUN_GROUP" >> "$GITHUB_OUTPUT"
+          node scripts/reading-run.mjs --run-group "$RUN_GROUP" --mode batch
+
+      - name: commit the reading (or the skipped/aborted record — SPEC §8's 60-day mitigation)
+        run: |
+          git config user.name "tiltmeter-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add observatory
+          if git diff --cached --quiet; then
+            echo "nothing to commit — unexpected on a clean exit, see the previous step's log" >&2
+            exit 1
+          fi
+          git commit -m "reading(${{ steps.reading.outputs.run-group }}): scheduled run — $(date -u +%Y-%m-%d)"
+          git push

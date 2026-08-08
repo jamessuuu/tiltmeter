@@ -1,0 +1,80 @@
+name: release-watch
+
+# SPEC §8 M7: "release-watch.yml — daily; diffs the Anthropic models list
+# against models.json, opens a PR adding the new model with its releasedAt
+# + source URL. The PR is the human gate; merging it triggers a release
+# run. No model enters the panel automatically."
+#
+# Needs ANTHROPIC_API_KEY to query the (free, non-spending) Models API —
+# scripts/release-watch.mjs degrades cleanly (logs a reason, exits 0, never
+# red) when the secret is absent, so this workflow is safe to land before
+# the secret is configured (SPEC §8 M7's own acceptance bar).
+#
+# Trigger surface: schedule + workflow_dispatch only — neither is
+# externally-triggerable (SPEC §9's fork-PR row), so this file needs no
+# per-job workflow_dispatch guard for `ci.yml`'s `lint-workflows` check to
+# pass (unlike reading.yml, this file's `on:` never includes anything a
+# fork PR or external actor could cause in the first place).
+#
+# Committed but never executed by this build (HARD RULE: no live API call,
+# no key use in this session).
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-watch:
+    if: github.repository == 'jamessuuu/tiltmeter'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter tiltmeter build
+
+      # Mutates observatory/models.json in place ONLY when a genuinely new
+      # (non-dated-snapshot) model id shows up; no-ops (exit 0, no diff)
+      # otherwise or when the key is absent/unreachable.
+      - name: diff the live Anthropic models list against observatory/models.json
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/release-watch.mjs
+
+      # No-ops if release-watch.mjs made no changes. The PR is the human
+      # gate SPEC §8 describes — nothing here merges anything, and nothing
+      # here touches observatory/panel.json (the standing/release panel),
+      # so a merged PR still requires a separate, deliberate edit before
+      # any new model is actually run.
+      - name: open a PR if a new model was found
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "models.json: candidate model(s) found by release-watch"
+          title: "release-watch: new Anthropic model candidate(s)"
+          body: |
+            Opened automatically by `release-watch.yml` (SPEC §8 M7) — this
+            is the human gate, not a PR meant to be auto-merged.
+
+            **Before merging:**
+            - Verify each `releasedAt` against the model's real public
+              announcement (the value here is the Models API's `created_at`
+              — a registration date, not necessarily the announcement date).
+            - Replace each `sourceUrl` TODO with the specific announcement
+              URL.
+            - Leave `status: "release-only"` unless this model should join
+              the standing weekly panel — that is a SEPARATE edit to
+              `observatory/panel.json`, never done by this workflow.
+
+            Merging this PR (once corrected) does not by itself trigger
+            anything — a release-triggered run group is a follow-up,
+            human-initiated step.
+          branch: release-watch/models-json-update
+          add-paths: observatory/models.json

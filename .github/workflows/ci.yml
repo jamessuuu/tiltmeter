@@ -58,6 +58,15 @@ jobs:
         # drift — latest.json no longer matching a fresh run — is the `eval`
         # stage's job, above; this stage only checks the committed docs.
         run: pnpm calibration:check
+      - name: lint-workflows
+        # SPEC §9 fork-PR/secret-boundary row, security-critical (M7): fails
+        # red if any .github/workflows/*.yml with an externally-triggerable
+        # event (pull_request, pull_request_target, issue_comment, …)
+        # references a secret without a workflow_dispatch-only job guard —
+        # the mechanical version of "no workflow reachable by external input
+        # ever sees ANTHROPIC_API_KEY" (SECURITY.md), checked on every push/PR
+        # rather than relying on review alone.
+        run: node scripts/lint-workflow-secrets.mjs
 
   # SPEC §12 "Live smoke — workflow_dispatch only: --sync --limit 2 --model
   # claude-haiku-4-5, ~$0.002. Never on PRs." SPEC §14 M4's own gate ships

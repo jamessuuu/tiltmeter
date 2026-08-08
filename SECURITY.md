@@ -69,27 +69,49 @@ re-submits a cell that already has one recorded. Deterministic
 submission, so a crash between submit and write cannot cause a duplicate
 charge.
 
-## Cost caps — provider console limit + runner-enforced caps — runner-enforced caps apply from M4; the console workspace limit lands at M7
+## Cost caps — provider console limit + runner-enforced caps — runner-enforced caps apply from M4; the console workspace limit's runbook lands at M7
 
 Two independent layers (docs/SPEC.md §8): a dedicated Anthropic API key with
 a monthly spend limit set in the console (the only cap that survives a
 leaked key), and runner-enforced `maxRunUsd` / `maxCellUsd` / `maxMonthUsd`
 tracked in the committed index. A cap trip stops submission and writes the
 reading `aborted` — never a silent skip, never a partial reading presented
-as complete.
+as complete. `docs/OPERATIONS.md` §1–2 (M7) is the step-by-step runbook for
+the console side; **setting the actual console limit is a manual action in
+Anthropic's Console that this repo cannot perform or verify from code, and
+has not been done as of this commit** — `ANTHROPIC_API_KEY` is not yet
+configured on this repo's Actions secrets at all, so nothing here has spent
+anything (README's own pre-release banner says the same).
 
-## Suite edited between plan and run (`E_PLAN_STALE`) — applies from M4 (the schedule that could trigger it lands at M7)
+## Suite edited between plan and run (`E_PLAN_STALE`) — applies from M4; the schedule that could trigger it lands at M7
 
 `plan.json` pins the `suiteSpecHash` it was built from; a mismatch at `run`
-time is a usage error (exit 4, "re-plan"), not a silent re-plan on the
-runner's own authority.
+time refuses with its own dedicated exit code (`CLI_EXIT.PLAN_STALE = 5`,
+`src/cli/exit-codes.ts`), not a silent re-plan on the runner's own
+authority. (SPEC §9's own prose says "exit 4, re-plan" — code 4 was already
+committed to Commander's own usage-error path at M0, so a stale plan gets a
+*distinct* code instead of colliding with it; a stale plan is not a CLI
+usage mistake, and the codebase treats it as its own case rather than
+matching the spec prose's number literally. Tested in
+`cli/commands/plan-run.test.ts`.)
 
-## Fork PR / external-contributor secret boundary — lands at M7
+## Fork PR / external-contributor secret boundary — applies from M7
 
-`reading.yml` runs on `schedule` and `workflow_dispatch` only, guarded by
-`if: github.repository == 'jamessuuu/tiltmeter'`, with `permissions:
-contents: write` and nothing else. No workflow reachable by a fork PR or
-external input ever sees `ANTHROPIC_API_KEY`.
+`reading.yml` and `release-watch.yml` are the only two workflows that ever
+reference `ANTHROPIC_API_KEY`. `reading.yml` runs on `schedule` and
+`workflow_dispatch` only, guarded by `if: github.repository ==
+'jamessuuu/tiltmeter'`, with `permissions: contents: write` and nothing
+else. `release-watch.yml` runs on `schedule` and `workflow_dispatch` only
+too (same guard) — neither is triggerable by a fork PR or any other
+external input. No workflow reachable by a fork PR or external input ever
+sees `ANTHROPIC_API_KEY`, and this is not just reviewed: `ci.yml`'s
+`lint-workflows` stage (`packages/tiltmeter/src/node/workflow-lint.ts`)
+parses every committed workflow file on every push/PR and fails red if any
+job referencing a secret is reachable by `pull_request` /
+`pull_request_target` / `issue_comment` / similar without an explicit
+`if: github.event_name == 'workflow_dispatch'` guard — see
+`workflow-lint.test.ts`, which exercises this exact repo's `ci.yml` as one
+of its own fixtures.
 
 ## No unauthenticated write path — because there is no write path — applies from M6
 

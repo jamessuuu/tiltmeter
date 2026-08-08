@@ -11,7 +11,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { commitDateOnly, fileCommitHistory, fileContentAtCommit, findFirstCommitWithHash } from "./git.js";
+import { commitDateOnly, currentCommit, fileCommitHistory, fileContentAtCommit, findFirstCommitWithHash } from "./git.js";
 
 let dir: string;
 
@@ -72,6 +72,32 @@ describe("fileContentAtCommit", () => {
   it("undefined for a path that does not exist at that commit", () => {
     const c1 = commitFileAt("suite.json", "v1", "add", "2026-01-01T00:00:00Z");
     expect(fileContentAtCommit(dir, c1, "does-not-exist.json")).toBeUndefined();
+  });
+});
+
+describe("currentCommit (M7: the real harnessCommit the bin resolves)", () => {
+  it("undefined when cwd is not a git repo at all", () => {
+    const notARepo = mkdtempSync(join(tmpdir(), "tiltmeter-not-git-"));
+    try {
+      expect(currentCommit(notARepo)).toBeUndefined();
+    } finally {
+      rmSync(notARepo, { recursive: true, force: true });
+    }
+  });
+
+  it("undefined for a freshly-init'd repo with no commits yet", () => {
+    expect(currentCommit(dir)).toBeUndefined();
+  });
+
+  it("returns HEAD's SHA once a commit exists", () => {
+    const c1 = commitFileAt("suite.json", "v1", "add", "2026-01-01T00:00:00Z");
+    expect(currentCommit(dir)).toBe(c1);
+  });
+
+  it("tracks HEAD across further commits", () => {
+    commitFileAt("suite.json", "v1", "add", "2026-01-01T00:00:00Z");
+    const c2 = commitFileAt("suite.json", "v2", "edit", "2026-02-01T00:00:00Z");
+    expect(currentCommit(dir)).toBe(c2);
   });
 });
 

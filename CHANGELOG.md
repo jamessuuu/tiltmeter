@@ -6,6 +6,84 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- M7 (workflows — docs/SPEC.md §8/§9/§14): `reading.yml` (weekly
+  `cron: '0 3 * * 1'` + `workflow_dispatch`), `release-watch.yml` (daily,
+  diffs the live Anthropic Models API against `observatory/models.json`
+  and opens a PR — the human gate, never an auto-added panel entry),
+  `health.yml` (daily, fails and opens/reuses a labelled issue when the
+  newest REAL reading — not a skipped mitigation commit — is >14 days old).
+  All three committed, none ever executed (HARD RULE: no live API call, no
+  key use in this build).
+
+  `packages/tiltmeter/src/cli/commands/scheduled-reading.ts` is what
+  `reading.yml` actually calls (via `scripts/reading-run.mjs`'s thin
+  "import the compiled dist" shim, mirroring `calibration-report.mjs`) —
+  NOT a new documented `tiltmeter` subcommand; SPEC §7's CLI table stays
+  exactly as specified. It closes the one real gap in the 60-day
+  auto-disable mitigation the existing `plan`/`run` pair left open:
+  `tiltmeter run`'s missing-key skip already wrote a committed `skipped`
+  index entry (M4, unchanged), but `tiltmeter plan` REFUSES on a cap
+  breach and writes nothing at all — a silent gap for a scheduled run
+  whose month is already spent. `runScheduledReading` reuses
+  `core/caps.ts`'s own `checkCaps` as a plan-time preflight (an empty
+  `cellEstimatesUsd` array still exercises the month-to-date-vs-cap
+  compare — no new cap logic, just a new caller) and, on a race past that
+  preflight, catches `plan`'s own `CAP_REFUSED` too — either way a
+  `status: "skipped"` entry lands and commits. A genuine configuration
+  error (no suites, bad schema) still propagates and fails the job red,
+  rather than being swallowed as a skip.
+
+  `core/health.ts` (`computeHealthState`/`newestRealReadingAt`, exported
+  from `"."`) mirrors `apps/web/lib/dead-man.ts`'s shape at a 14-day
+  threshold for a different audience (CI failure + issue, not a site
+  banner) — and deliberately does NOT count a `skipped` entry as "a
+  reading landed," so the mitigation's own commits can never mask real
+  staleness. `src/node/git.ts` gained `currentCommit` (the real `HEAD` SHA
+  the bin now resolves for `harnessCommit` — previously always
+  `"unknown"` outside a test's injected value, a real gap `src/cli/index.ts`
+  closes with no change to any existing test's injected deps).
+
+  The fork-PR/secret-boundary property (SPEC §9, SECURITY.md) is now
+  CHECKED, not just reviewed: `src/node/workflow-lint.ts`
+  (`lintWorkflowSecretsInDir`/`findWorkflowSecretViolations`) parses every
+  `.github/workflows/*.yml`, and `ci.yml`'s new `lint-workflows` stage
+  fails red if any job referencing a secret is reachable by
+  `pull_request`/`pull_request_target`/`issue_comment`/similar without an
+  explicit `if: github.event_name == 'workflow_dispatch'` guard —
+  deliberately narrow pattern-matching (not a full expression evaluator)
+  that fails TOWARD flagging on anything it can't confidently read as
+  narrowed. `workflow-lint.test.ts` exercises this exact repo's real
+  `ci.yml` as a fixture (its `live-smoke` job mixes a `pull_request`-
+  triggered job with a `workflow_dispatch`-gated one in the same file —
+  the one case the check must NOT false-positive on) alongside synthetic
+  good/bad cases, including a named regression guard for the classic
+  "`on:` parses as a YAML 1.1 boolean" GitHub Actions footgun (verified
+  NOT present in js-yaml v4's default schema before relying on it).
+
+  `docs/OPERATIONS.md` (new): the dedicated-workspace + console-spend-limit
+  runbook (SPEC §15 Q1 — the provider-enforced cap is the only one that
+  survives a leaked key, and setting it is a manual Console action no code
+  here can perform), the two cap layers and how they compose, the weekly
+  (~$8–10/mo) vs biweekly (~$4/mo) cadence choice with both cost figures,
+  exactly what a cap-abort looks like end to end, and how to read a
+  published reading page.
+
+  SECURITY.md: fixed a falsified claim found on review (`grep`-verified
+  against `plan-run.test.ts`) — "a mismatch at run time is a usage error
+  (exit 4, 're-plan')" was never true; the actual, tested behavior is a
+  DISTINCT exit code (`CLI_EXIT.PLAN_STALE = 5`, deliberately not reusing
+  `USAGE = 4` — see `exit-codes.ts`'s own docstring, unchanged). Updated
+  the fork-PR section to name `release-watch.yml` too (the second, only
+  other workflow that ever references the secret) and to point at the new
+  mechanical check rather than asserting the property by prose alone.
+
+  Gate (docs/SPEC.md §12/§14): 334 pre-M7 tests plus new coverage for
+  `currentCommit`, `computeHealthState`/`newestRealReadingAt`,
+  `workflow-lint`'s pure functions (incl. the real-`ci.yml` fixture), and
+  `runScheduledReading`'s five scenarios (no key, cap-already-reached,
+  plan-refuses-on-a-race, a clean end-to-end run, and a genuine config
+  error that must NOT be swallowed) — all green.
+
 - M6 (the site — docs/SPEC.md §14/§10, `apps/web`, Next.js 16.3.0 App
   Router / React 19.2 / TS strict + `noUncheckedIndexedAccess` / Tailwind 4):
   five routes, every one prerendered with `output: "export"` (a structural,
