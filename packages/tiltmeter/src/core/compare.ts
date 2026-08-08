@@ -2,20 +2,22 @@
  * `compare` (SPEC §4 attribution model, §5 statistics, §14 M1-M3).
  *
  * M1 shipped a per-metric mean delta against a minimum-detectable-effect
- * threshold — no axis-attribution gate, no confidence interval. M2 (this
- * file) adds the attribution gate: SPEC §4 "a comparison is computed only
- * when exactly one axis element differs… anything else -> cannot-attribute,
+ * threshold — no axis-attribution gate, no confidence interval. M2 added
+ * the attribution gate: SPEC §4 "a comparison is computed only when
+ * exactly one axis element differs… anything else -> cannot-attribute,
  * emitted as a first-class verdict with reasons[] naming every axis element
- * that co-varied" — plus the two SPEC §9 completeness rules (a missing cell,
- * or either reading not `status: "complete"`, is also cannot-attribute) and
- * SPEC §4's alias-substitution event. M2 also lands the per-item
- * held/broke/fixed/flaky labels (SPEC §5) and flaky-exclusion from the
- * per-metric delta, because the attribution gate's own golden set (SPEC §12)
- * requires it. What M2 does NOT change: the classification rule itself is
- * still the M1 mean-delta-vs-MDE threshold. M3 swaps that rule for the
- * seeded paired percentile bootstrap (`core/stats.ts`) over the exact same
- * per-item pairs this file already builds — additive, not a rewrite.
+ * that co-varied" — plus the two SPEC §9 completeness rules (a missing
+ * cell, or either reading not `status: "complete"`, is also
+ * cannot-attribute), SPEC §4's alias-substitution event, and the per-item
+ * held/broke/fixed/flaky labels (SPEC §5) with flaky-exclusion from the
+ * per-metric item pool. M3 (this file) swaps the classification rule for
+ * the seeded paired percentile bootstrap (`core/stats.ts`) over that exact
+ * same per-item pool — additive, not a rewrite: `pairsForMetric` is
+ * unchanged from M2, only what happens to its output changes.
  */
+import { mulberry32, seedFromHex8 } from "./prng.js";
+import { sha256Hex } from "./sha256.js";
+import { pairedPercentileBootstrap } from "./stats.js";
 import { AXIS_TUPLE_KEYS, axisTupleOf, type ItemReading, type Reading } from "./reading.js";
 
 export type MetricVerdict = "regressed" | "improved" | "moved-within-noise";
@@ -56,6 +58,11 @@ export interface MetricDelta {
   mde: number;
   /** Non-flaky common items this metric's delta was computed over (SPEC §5: MDE default is "1/n"). */
   n: number;
+  /** 95% CI lower/upper bound from the seeded paired percentile bootstrap (SPEC §5, B resamples over `n` items). */
+  ciLow: number;
+  ciHigh: number;
+  /** Resample count (SPEC §5 default: 10,000). */
+  bootstrapB: number;
   verdict: MetricVerdict;
 }
 
@@ -103,10 +110,29 @@ export function worstMetricVerdict(verdicts: MetricVerdict[]): MetricVerdict {
  */
 const LOWER_IS_BETTER_METRICS: ReadonlySet<string> = new Set(["falsePositiveRate"]);
 
-/** M1's classification rule (mean delta vs MDE only). M3 replaces the call site with a CI+MDE rule; this stays exported so nothing else regresses in the meantime. */
+/** M1/M2's classification rule (mean delta vs MDE only, no CI). Kept and exported for the calibration harness and anything that wants the pre-bootstrap rule directly; `compareReadings` itself now calls `classifyBootstrap`. */
 export function classify(metric: string, delta: number, mde: number): MetricVerdict {
   if (Math.abs(delta) < mde) return "moved-within-noise";
   const directional = LOWER_IS_BETTER_METRICS.has(metric) ? -delta : delta;
+  return directional < 0 ? "regressed" : "improved";
+}
+
+/**
+ * SPEC §5's verdict table: `regressed`/`improved` require BOTH the 95% CI
+ * to exclude 0 AND `|D| >= MDE`; otherwise `moved-within-noise`. This is
+ * strictly more conservative than `classify` (mean-delta-vs-MDE alone) —
+ * a large but noisy delta whose CI still straddles 0 no longer fires.
+ */
+export function classifyBootstrap(
+  metric: string,
+  observed: number,
+  ciLow: number,
+  ciHigh: number,
+  mde: number,
+): MetricVerdict {
+  const ciExcludesZero = ciLow > 0 || ciHigh < 0;
+  if (!ciExcludesZero || Math.abs(observed) < mde) return "moved-within-noise";
+  const directional = LOWER_IS_BETTER_METRICS.has(metric) ? -observed : observed;
   return directional < 0 ? "regressed" : "improved";
 }
 
@@ -224,10 +250,19 @@ function classifyAxis(a: Reading, b: Reading): { axis: ComparisonAxis } | { cann
  * layer that resolves a requested cell to a reading (or nothing) can pass
  * either straight through without a separate branch.
  *
- * Order matters: `delta = mean(b) - mean(a)`, and the bootstrap seed (M3)
- * derives from `bodyHashA + bodyHashB` in that same order — swapping
- * argument order flips the sign of every result, which is expected (SPEC
- * §5's `D` is defined directionally, not as an absolute distance).
+ * Order matters: `delta = mean(b) - mean(a)`, and the bootstrap seed
+ * derives from `bodyHashA + bodyHashB` in that same order (SPEC §5: "seed
+ * = first 8 hex of sha256(bodyHashA+bodyHashB) — deterministic,
+ * reproducible, and not chosen by the analyst") — swapping argument order
+ * flips the sign of every result and reseeds the resampling, both expected
+ * (SPEC §5's `D` is defined directionally, not as an absolute distance).
+ *
+ * One seed, one continuing `Rng` stream, consumed across every declared
+ * metric IN THE SAME ORDER every time (`Object.keys(a.metrics)`, which
+ * follows the suite's declared `metrics` order) — not a fresh `mulberry32`
+ * per metric, which would make every metric resample the identical index
+ * sequence. Still fully deterministic and reproducible from the two
+ * readings' `bodyHash`es alone.
  */
 export function compareReadings(a: Reading | undefined, b: Reading | undefined): Comparison {
   if (a === undefined || b === undefined) return cannotAttribute(["missing-cell"]);
@@ -240,15 +275,17 @@ export function compareReadings(a: Reading | undefined, b: Reading | undefined):
 
   const items = buildItemComparisons(a, b);
   const metricNames = Object.keys(a.metrics).filter((m) => m in b.metrics);
+  const rng = mulberry32(seedFromHex8(sha256Hex(a.bodyHash + b.bodyHash)));
 
   const metrics: MetricDelta[] = metricNames.map((metric) => {
     const pairs = pairsForMetric(metric, a, b, items);
     const n = pairs.length;
     const meanA = mean(pairs.map((p) => p.a));
     const meanB = mean(pairs.map((p) => p.b));
-    const delta = meanB - meanA;
     const mde = n > 0 ? 1 / n : 1;
-    return { metric, meanA, meanB, delta, mde, n, verdict: classify(metric, delta, mde) };
+    const { observed: delta, ciLow, ciHigh, b: bootstrapB } = pairedPercentileBootstrap(pairs, rng);
+    const verdict = classifyBootstrap(metric, delta, ciLow, ciHigh, mde);
+    return { metric, meanA, meanB, delta, mde, n, ciLow, ciHigh, bootstrapB, verdict };
   });
 
   const verdict: Verdict =

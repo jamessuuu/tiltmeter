@@ -129,7 +129,7 @@ function flipItems(specs: ItemSpec[], flippedIds: readonly string[]): ItemSpec[]
   return specs.map((s) => (flipped.has(s.id) ? { ...s, bPasses: 0 } : s));
 }
 
-describe("compareReadings — mean-delta classification (SPEC §5, M1 rule retained through M2)", () => {
+describe("compareReadings — bootstrap classification (SPEC §5, M3)", () => {
   it("classifies regressed when the mean delta is negative and beyond MDE", () => {
     const { a, b } = buildPair(flipItems(ITEMS40_ALL_PASS, ITEMS40_ALL_PASS.slice(0, 20).map((i) => i.id)));
     const cmp = compareReadings(a, b);
@@ -150,19 +150,21 @@ describe("compareReadings — mean-delta classification (SPEC §5, M1 rule retai
     for (const m of compareReadings(a, b).metrics) expect(m.delta).toBe(0);
   });
 
-  it("classifies moved-within-noise for a delta below MDE (near-miss, false-positive discipline)", () => {
-    // MDE = 1/40 for a 40-item suite; a 1-item flip is exactly at MDE, not below it,
-    // so it lands on "regressed" per the >= bar — use 0 flipped items plus a partial
-    // per-item miss below to land strictly under MDE via a fractional (flaky) item instead.
-    // Simpler: 0 items flipped is the true near-miss floor already covered above; this
-    // test instead confirms 1 flipped item (delta == MDE) does NOT round down to noise.
+  it("classifies moved-within-noise for a single-item flip — the CI still straddles 0 even though |D| == MDE (false-positive discipline)", () => {
+    // MDE = 1/40 for a 40-item suite; a 1-item flip lands delta exactly AT MDE (never
+    // below it — a full flip can't be smaller than "one item's worth"). Under M1's
+    // mean-delta-only rule this alone was enough to fire "regressed". M3's bootstrap CI
+    // is the real false-positive-discipline mechanism SPEC §12's "near-miss" golden
+    // describes: with only 1 of 40 items carrying any signal, most resamples don't even
+    // draw that item, so the 95% CI still includes 0 and the verdict stays noise.
     const [firstItem] = ITEMS40_ALL_PASS;
     if (firstItem === undefined) throw new Error("fixture has no items");
     const flipped = flipItems(ITEMS40_ALL_PASS, [firstItem.id]);
     const { a: nearA, b: nearB } = buildPair(flipped);
     const cmp = compareReadings(nearA, nearB);
     expect(cmp.metrics[0]?.delta).toBeCloseTo(-1 / 40, 10);
-    expect(cmp.verdict).toBe("regressed");
+    expect(cmp.metrics[0]?.mde).toBeCloseTo(1 / 40, 10);
+    expect(cmp.verdict).toBe("moved-within-noise");
   });
 
   it("a suite's verdict is the WORST of its declared metrics", () => {

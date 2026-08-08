@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mulberry32, randomIndex, seedFromHex8, shuffleInPlace } from "./prng.js";
+import { bernoulliTrial, mulberry32, randomIndex, seedFromHex8, shuffleInPlace } from "./prng.js";
 
 describe("mulberry32", () => {
   it("is deterministic for a given seed", () => {
@@ -60,5 +60,30 @@ describe("randomIndex", () => {
       expect(idx).toBeGreaterThanOrEqual(0);
       expect(idx).toBeLessThan(7);
     }
+  });
+});
+
+describe("bernoulliTrial", () => {
+  it("always false for p=0 and always true for p=1", () => {
+    const rng = mulberry32(11);
+    for (let i = 0; i < 200; i++) expect(bernoulliTrial(rng, 0)).toBe(false);
+    for (let i = 0; i < 200; i++) expect(bernoulliTrial(rng, 1)).toBe(true);
+  });
+
+  it("is deterministic for a given seed", () => {
+    const a = mulberry32(13);
+    const b = mulberry32(13);
+    const seqA = Array.from({ length: 50 }, () => bernoulliTrial(a, 0.5));
+    const seqB = Array.from({ length: 50 }, () => bernoulliTrial(b, 0.5));
+    expect(seqA).toEqual(seqB);
+  });
+
+  it("lands close to p over many draws", () => {
+    const rng = mulberry32(17);
+    let trues = 0;
+    const n = 20_000;
+    for (let i = 0; i < n; i++) if (bernoulliTrial(rng, 0.3)) trues++;
+    expect(trues / n).toBeGreaterThan(0.28);
+    expect(trues / n).toBeLessThan(0.32);
   });
 });

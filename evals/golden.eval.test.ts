@@ -263,3 +263,352 @@ describe("golden: attribution edge cases (SPEC §12 edge goldens, §14 M2 gate)"
     expect(cmp.verdict).toBe("moved-within-noise");
   });
 });
+
+describe("golden: additional classifier coverage (SPEC §12: >=24 total, M3)", () => {
+  it("improved — 12 positive items fixed AND 3 negative items stop misfiring ⇒ every declared metric improves", async () => {
+    // A suite's verdict is the WORST of its declared metrics (SPEC §5), and moved-within-noise
+    // outranks improved in that ranking — so getting suite-level "improved" requires EVERY
+    // declared metric to genuinely improve, not just `overall`. Flipping only positive items
+    // leaves falsePositiveRate flat (moved-within-noise), which would win the worst-of and sink
+    // the suite verdict to noise even though overall/triggerRate improved. Flip some negatives
+    // too so falsePositiveRate has a real (improving) delta of its own.
+    // negativeCount is larger than the other goldens' here (20, not 10): with only 3 signal
+    // items out of 10 negatives the bootstrap CI on falsePositiveRate was too wide (n too small
+    // for the resample to reliably exclude 0) — 6 of 20 keeps the same ~30% signal ratio the
+    // "positive"/"regressed" goldens use, at an n the bootstrap can actually resolve.
+    const suite = buildFixtureSuite({ id: "golden-improved", positiveCount: 30, negativeCount: 20, k: 3 });
+    const positives = suite.items.filter((i) => i.polarity === "positive");
+    const negatives = suite.items.filter((i) => i.polarity === "negative");
+    const brokenInA = [...positives.slice(0, 12).map((i) => i.id), ...negatives.slice(0, 6).map((i) => i.id)];
+
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(brokenInA)) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.metrics.find((m) => m.metric === "overall")?.verdict).toBe("improved");
+    expect(cmp.metrics.find((m) => m.metric === "triggerRate")?.verdict).toBe("improved");
+    expect(cmp.metrics.find((m) => m.metric === "falsePositiveRate")?.verdict).toBe("improved");
+    expect(cmp.verdict).toBe("improved");
+  });
+
+  it("FPR-only regression — overall/triggerRate flat, negatives newly misfire ⇒ suite verdict regressed", async () => {
+    const suite = buildFixtureSuite({ id: "golden-fpr-only", positiveCount: 20, negativeCount: 20, k: 3 });
+    const negativeIds = suite.items.filter((i) => i.polarity === "negative").map((i) => i.id);
+
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    // Only negatives misfire in b; every positive still passes -> triggerRate unaffected.
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(negativeIds)) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    const triggerRate = cmp.metrics.find((m) => m.metric === "triggerRate");
+    const fpr = cmp.metrics.find((m) => m.metric === "falsePositiveRate");
+    expect(triggerRate?.verdict).toBe("moved-within-noise");
+    expect(fpr?.verdict).toBe("regressed");
+    expect(cmp.verdict).toBe("regressed"); // worst-of
+  });
+
+  it("axis: harness — a suite edit alone (same model) is the rebaseline pair, computed normally", async () => {
+    const suiteBase = buildFixtureSuite({ id: "golden-axis-harness", positiveCount: 20, negativeCount: 10, k: 3 });
+    const suiteEdited = buildFixtureSuite({ id: "golden-axis-harness", positiveCount: 20, negativeCount: 11, k: 3 });
+
+    const readingA = await runSuite(
+      suiteBase,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suiteBase, allPassBehavior()) }),
+      ctxFor(suiteBase, "rg-1", "a"),
+    );
+    const readingB = await runSuite(
+      suiteEdited,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suiteEdited, allPassBehavior()) }),
+      ctxFor(suiteEdited, "rg-2", "a"),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.axis).toBe("harness");
+    expect(cmp.verdict).not.toBe("cannot-attribute");
+  });
+
+  it("axis: model — two different (non-aliased) models within the same run group is the deliberate panel comparison", async () => {
+    const suite = buildFixtureSuite({ id: "golden-axis-model", positiveCount: 20, negativeCount: 10, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: withResolvedModel(script, "haiku-resolved") }),
+      ctxFor(suite, "rg-1", "haiku", { modelIdRequested: "haiku" }),
+    );
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: withResolvedModel(script, "sonnet-resolved") }),
+      ctxFor(suite, "rg-1", "sonnet", { modelIdRequested: "sonnet" }),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.axis).toBe("model");
+    expect(cmp.verdict).toBe("moved-within-noise"); // identical behavior, only the model identity differs
+  });
+
+  it("a lone diff on presentationHash alone is attributable (axis 'other', not one of the three named axes)", async () => {
+    const suite = buildFixtureSuite({ id: "golden-axis-other-presentation", positiveCount: 15, negativeCount: 5, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-1", "a"));
+    const readingB = { ...readingA, cellId: "b", axes: { ...readingA.axes, presentationHash: "different-presentation-hash" } };
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.axis).toBe("other");
+    expect(cmp.verdict).not.toBe("cannot-attribute");
+  });
+
+  it("a lone diff on samplingPolicyHash alone is attributable (axis 'other')", async () => {
+    const suite = buildFixtureSuite({ id: "golden-axis-other-sampling", positiveCount: 15, negativeCount: 5, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-1", "a"));
+    const readingB = { ...readingA, cellId: "b", axes: { ...readingA.axes, samplingPolicyHash: "different-sampling-hash" } };
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.axis).toBe("other");
+    expect(cmp.verdict).not.toBe("cannot-attribute");
+  });
+
+  it("a lone diff on runnerBehaviorVersion alone is attributable (axis 'other')", async () => {
+    const suite = buildFixtureSuite({ id: "golden-axis-other-runner", positiveCount: 15, negativeCount: 5, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-1", "a"));
+    const readingB = { ...readingA, cellId: "b", axes: { ...readingA.axes, runnerBehaviorVersion: readingA.axes.runnerBehaviorVersion + 1 } };
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.axis).toBe("other");
+    expect(cmp.verdict).not.toBe("cannot-attribute");
+  });
+
+  it("two co-varying axis elements OTHER than the director's combo also refuse attribution, reasons sorted", async () => {
+    const suite = buildFixtureSuite({ id: "golden-axis-conflict-other", positiveCount: 15, negativeCount: 5, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-1", "a"));
+    const readingB = {
+      ...readingA,
+      cellId: "b",
+      axes: { ...readingA.axes, presentationHash: "different-presentation-hash", samplingPolicyHash: "different-sampling-hash" },
+    };
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.verdict).toBe("cannot-attribute");
+    expect(cmp.reasons).toEqual(["presentationHash", "samplingPolicyHash"]);
+    expect(cmp.metrics).toEqual([]);
+  });
+
+  it("missing cell — the 'a' side absent", async () => {
+    const suite = buildFixtureSuite({ id: "golden-missing-a", positiveCount: 10, negativeCount: 5, k: 3 });
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+    const cmp = compareReadings(undefined, readingB);
+    expect(cmp.verdict).toBe("cannot-attribute");
+    expect(cmp.reasons).toEqual(["missing-cell"]);
+  });
+
+  it("missing cell — the 'b' side absent", async () => {
+    const suite = buildFixtureSuite({ id: "golden-missing-b", positiveCount: 10, negativeCount: 5, k: 3 });
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    const cmp = compareReadings(readingA, undefined);
+    expect(cmp.verdict).toBe("cannot-attribute");
+    expect(cmp.reasons).toEqual(["missing-cell"]);
+  });
+
+  it("incomplete on the 'a' side (not just 'b') is symmetric ⇒ cannot-attribute(incomplete)", async () => {
+    const suite = buildFixtureSuite({ id: "golden-incomplete-a", positiveCount: 15, negativeCount: 5, k: 3 });
+    let partialScript = scriptForBehavior(suite, allPassBehavior());
+    const [firstItem] = suite.items;
+    if (firstItem === undefined) throw new Error("fixture suite has no items");
+    const perAttempt = partialScript[firstItem.id];
+    if (perAttempt === undefined) throw new Error("missing script");
+    partialScript = { ...partialScript, [firstItem.id]: { ...perAttempt, 1: noResultTrial("simulated 429") } };
+
+    const partial = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script: partialScript }), ctxFor(suite, "rg-1", "a"));
+    const complete = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+
+    const cmp = compareReadings(partial, complete);
+    expect(cmp.verdict).toBe("cannot-attribute");
+    expect(cmp.reasons).toEqual(["incomplete"]);
+  });
+
+  it("multiple flaky items are all excluded together; the verdict reflects only the remaining clean items", async () => {
+    const suite = buildFixtureSuite({ id: "golden-multi-flaky", positiveCount: 30, negativeCount: 10, k: 3 });
+    const flippedIds = suite.items.slice(0, 12).map((i) => i.id);
+    const flakyIds = suite.items.slice(12, 15).map((i) => i.id); // 3 flaky items
+
+    let scriptA = scriptForBehavior(suite, allPassBehavior());
+    let scriptB = scriptForBehavior(suite, flippedBehavior(flippedIds));
+    for (const id of flakyIds) {
+      scriptA = withFailedAttempt(scriptA, id, 1);
+      scriptB = withFailedAttempt(scriptB, id, 1);
+    }
+
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script: scriptA }), ctxFor(suite, "rg-1", "a"));
+    const readingB = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script: scriptB }), ctxFor(suite, "rg-1", "b"));
+    const cmp = compareReadings(readingA, readingB);
+
+    for (const id of flakyIds) {
+      expect(cmp.items.find((i) => i.id === id)?.label).toBe("flaky");
+    }
+    const overall = cmp.metrics.find((m) => m.metric === "overall");
+    expect(overall?.n).toBe(40 - flakyIds.length);
+    expect(cmp.verdict).toBe("regressed");
+  });
+
+  it("mixed broke+fixed items nearly cancel out ⇒ moved-within-noise, but both labels still appear in the item list", async () => {
+    const suite = buildFixtureSuite({ id: "golden-broke-and-fixed", positiveCount: 20, negativeCount: 10, k: 3 });
+    const brokeIds = suite.items.slice(0, 3).map((i) => i.id);
+    const fixedIds = suite.items.slice(3, 6).map((i) => i.id);
+
+    // a: brokeIds pass, fixedIds fail. b: brokeIds fail, fixedIds pass. Net delta ~= 0.
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(fixedIds)) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(brokeIds)) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    for (const id of brokeIds) expect(cmp.items.find((i) => i.id === id)?.label).toBe("broke");
+    for (const id of fixedIds) expect(cmp.items.find((i) => i.id === id)?.label).toBe("fixed");
+    expect(cmp.verdict).toBe("moved-within-noise");
+  });
+
+  it("both triggerRate and falsePositiveRate regress simultaneously ⇒ suite verdict regressed", async () => {
+    const suite = buildFixtureSuite({ id: "golden-both-regress", positiveCount: 20, negativeCount: 20, k: 3 });
+    const positiveIds = suite.items.filter((i) => i.polarity === "positive").map((i) => i.id);
+    const negativeIds = suite.items.filter((i) => i.polarity === "negative").map((i) => i.id);
+
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    const degraded = scriptForBehavior(suite, flippedBehavior([...positiveIds, ...negativeIds]));
+    const readingB = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script: degraded }), ctxFor(suite, "rg-1", "b"));
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.metrics.find((m) => m.metric === "triggerRate")?.verdict).toBe("regressed");
+    expect(cmp.metrics.find((m) => m.metric === "falsePositiveRate")?.verdict).toBe("regressed");
+    expect(cmp.verdict).toBe("regressed");
+  });
+
+  it("opposing metrics — triggerRate improves while falsePositiveRate regresses ⇒ suite verdict is the worst (regressed)", async () => {
+    const suite = buildFixtureSuite({ id: "golden-opposing", positiveCount: 20, negativeCount: 20, k: 3 });
+    const positiveIds = suite.items.filter((i) => i.polarity === "positive").map((i) => i.id);
+    const negativeIds = suite.items.filter((i) => i.polarity === "negative").map((i) => i.id);
+
+    // a: positives fail, negatives correctly silent. b: positives pass (improved), negatives now misfire (regressed).
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(positiveIds)) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(negativeIds)) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.metrics.find((m) => m.metric === "triggerRate")?.verdict).toBe("improved");
+    expect(cmp.metrics.find((m) => m.metric === "falsePositiveRate")?.verdict).toBe("regressed");
+    expect(cmp.verdict).toBe("regressed"); // worst-of: regressed outranks improved
+  });
+
+  it("a realistic launch-scale suite (~108 items) with a small planted regression still classifies regressed", async () => {
+    const suite = buildFixtureSuite({ id: "golden-launch-scale", positiveCount: 70, negativeCount: 38, k: 3 });
+    const brokeIds = suite.items.slice(0, 6).map((i) => i.id); // ~5.6% of items, a realistic small regression
+
+    const readingA = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) }),
+      ctxFor(suite, "rg-1", "a"),
+    );
+    const readingB = await runSuite(
+      suite,
+      FIXTURE_PRESENTATION,
+      new FakeModelClient({ script: scriptForBehavior(suite, flippedBehavior(brokeIds)) }),
+      ctxFor(suite, "rg-1", "b"),
+    );
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.verdict).toBe("regressed");
+    expect(cmp.metrics.find((m) => m.metric === "overall")?.n).toBe(108);
+  });
+
+  it("a flaky item on the 'a' side only is still excluded (mixed within EITHER reading, symmetric with the 'b'-only case)", async () => {
+    const suite = buildFixtureSuite({ id: "golden-flaky-a-only", positiveCount: 20, negativeCount: 10, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+    const [flakyItem] = suite.items;
+    if (flakyItem === undefined) throw new Error("fixture suite has no items");
+    const flakyScript = withFailedAttempt(script, flakyItem.id, 1);
+
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script: flakyScript }), ctxFor(suite, "rg-1", "a"));
+    const readingB = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-1", "b"));
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.items.find((i) => i.id === flakyItem.id)?.label).toBe("flaky");
+    expect(cmp.metrics.find((m) => m.metric === "overall")?.n).toBe(29);
+  });
+
+  it("a clean rerun at larger scale (identical suite/model, different run group) stays moved-within-noise", async () => {
+    const suite = buildFixtureSuite({ id: "golden-large-clean-rerun", positiveCount: 60, negativeCount: 20, k: 3 });
+    const script = scriptForBehavior(suite, allPassBehavior());
+
+    const readingA = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-1", "a"));
+    const readingB = await runSuite(suite, FIXTURE_PRESENTATION, new FakeModelClient({ script }), ctxFor(suite, "rg-2", "a"));
+
+    const cmp = compareReadings(readingA, readingB);
+    expect(cmp.axis).toBe("time");
+    expect(cmp.verdict).toBe("moved-within-noise");
+    for (const metric of cmp.metrics) expect(metric.delta).toBe(0);
+  });
+});

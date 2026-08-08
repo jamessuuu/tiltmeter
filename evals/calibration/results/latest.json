@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-08-08T17:43:57.849Z",
+  "itemCount": 40,
+  "trials": 200,
+  "bootstrapB": 10000,
+  "degradedCount": 8,
+  "falsePositive": {
+    "trials": 200,
+    "fires": 0,
+    "rate": 0
+  },
+  "detectionPower": {
+    "trials": 200,
+    "fires": 190,
+    "rate": 0.95
+  }
+}

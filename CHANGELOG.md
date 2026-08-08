@@ -6,6 +6,53 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- M3 (statistics, offline, $0 — docs/SPEC.md §14 / §5): `core/stats.ts`'s
+  `pairedPercentileBootstrap` — the seeded paired percentile bootstrap over
+  ITEMS (not trials), `B = 10,000` resamples, 95% CI via nearest-rank
+  percentiles. `compareReadings` (`core/compare.ts`) now classifies with
+  `classifyBootstrap` (CI excludes 0 AND `|D| >= MDE`) in place of M1/M2's
+  mean-delta-only rule — `classify` stays exported for the calibration
+  harness. The seed is `seedFromHex8(sha256Hex(bodyHashA + bodyHashB))`
+  (order-dependent, matching `delta`'s own directionality) feeding ONE
+  continuing `mulberry32` stream consumed across every declared metric in
+  the suite's declared order — deterministic and reproducible from the two
+  readings' `bodyHash`es alone, never analyst-chosen. `MetricDelta` gains
+  `ciLow`/`ciHigh`/`bootstrapB`. A behavior change worth calling out: a
+  single fully-flipped item out of 40 (`|D| == MDE` exactly) now correctly
+  classifies `moved-within-noise` — under M1/M2's mean-delta-only rule it
+  fired `regressed`, since only 1/40 items carry any signal the CI still
+  straddles 0 for most resamples. This is the false-positive discipline
+  SPEC §12's "near-miss" golden was written to describe.
+
+  New pure module `core/calibration.ts` (SPEC §12's "the numbers that go in
+  the README"): `runNullPairCalibration` (200 seeded trials, both readings
+  drawn from identical per-item rates — the null hypothesis) and
+  `runPlantedDegradationCalibration` (200 seeded trials, 8 of 40 items —
+  20% — carry a clean planted regression against the same background noise
+  the null sim uses). Both share a 40-item pool at a 0.9 per-item baseline
+  pass rate, realistic enough that the per-item flaky-exclusion machinery
+  (SPEC §5) gets exercised for real rather than assumed away. New
+  `core/prng.ts` primitive: `bernoulliTrial(rng, p)`. Achieved (seeded,
+  reproducible — see `evals/calibration/results/latest.json`):
+  **false-positive rate 0.0% (0/200)**, comfortably under the ≤8/200 CI
+  gate; **detection power 95.0% (190/200)**, comfortably over the ≥90%
+  floor. `scripts/calibration-report.mjs` mirrors the sibling repo's
+  `chaos-report.mjs` pattern exactly: `pnpm calibration` regenerates
+  `evals/calibration/results/latest.json` + `RESULTS.md` and injects the
+  `<!-- calibration:begin/end -->` block in this README; `pnpm calibration:check`
+  (new CI stage, `calibration-drift`) fails on any drift between the
+  committed docs and the committed json, without needing a build or
+  re-running the sim (that re-verification is the `eval` stage's job, via
+  `evals/calibration.eval.test.ts`).
+
+  Gate (docs/SPEC.md §12/§14): both calibration gates green (numbers above);
+  `evals/golden.eval.test.ts` carries 26 classifier goldens (>=24 required)
+  at 100% exact match, covering every axis label (model/time/harness/
+  null-pair/other), every cannot-attribute reason, multi-item flaky
+  exclusion, opposing-metric worst-of resolution, and a launch-scale
+  (108-item) suite. 162 tests green (17 files), zero regressions to the
+  129 from M0-M2.
+
 - M2 (attribution, offline, $0 — docs/SPEC.md §14 / §4): `compareReadings`
   (`core/compare.ts`) gains the axis-attribution gate — a comparison is
   computed only when exactly one of the five `AxisTupleKey` elements

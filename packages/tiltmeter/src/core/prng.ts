@@ -53,3 +53,8 @@ export function shuffleInPlace<T>(arr: T[], rng: Rng): T[] {
 export function randomIndex(rng: Rng, length: number): number {
   return Math.floor(rng() * length);
 }
+
+/** One Bernoulli(p) draw from an injected Rng — used by `core/calibration.ts` to simulate k independent per-item trials. */
+export function bernoulliTrial(rng: Rng, p: number): boolean {
+  return rng() < p;
+}

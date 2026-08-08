@@ -41,3 +41,11 @@ jobs:
         run: pnpm build
       - name: pack-check
         run: pnpm ci:pack-check
+      - name: calibration-drift
+        # The committed README calibration block and evals/calibration/RESULTS.md
+        # must render byte-for-byte from the committed
+        # evals/calibration/results/latest.json (SPEC §12/§14 M3: the README
+        # numbers cannot drift from what was actually simulated). Behavioural
+        # drift — latest.json no longer matching a fresh run — is the `eval`
+        # stage's job, above; this stage only checks the committed docs.
+        run: pnpm calibration:check

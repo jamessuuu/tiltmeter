@@ -10,7 +10,7 @@
 export { TILTMETER_VERSION, RUNNER_BEHAVIOR_VERSION } from "./core/version.js";
 export { sha256Hex } from "./core/sha256.js";
 export { canonicalStringify, jcsCanonical, JsonObjectSchema, JsonValueSchema, type Json, type JsonObject } from "./core/canonical.js";
-export { mulberry32, randomIndex, seedFromHex8, shuffleInPlace, type Rng } from "./core/prng.js";
+export { bernoulliTrial, mulberry32, randomIndex, seedFromHex8, shuffleInPlace, type Rng } from "./core/prng.js";
 export { TiltmeterError, isTiltmeterError, type ErrorCode } from "./core/errors.js";
 export {
   ArtifactSchema,
@@ -84,6 +84,7 @@ export { computeMetrics, runSuite, type RunContext } from "./core/run.js";
 export {
   buildItemComparisons,
   classify,
+  classifyBootstrap,
   compareReadings,
   pairsForMetric,
   worstMetricVerdict,
@@ -95,6 +96,21 @@ export {
   type MetricVerdict,
   type Verdict,
 } from "./core/compare.js";
+export { pairedPercentileBootstrap, type BootstrapResult, type ItemPair } from "./core/stats.js";
+export {
+  CALIBRATION_BASE_RATE,
+  CALIBRATION_BOOTSTRAP_B,
+  CALIBRATION_DEGRADED_COUNT,
+  CALIBRATION_DEGRADED_RATE,
+  CALIBRATION_ITEM_COUNT,
+  CALIBRATION_K,
+  CALIBRATION_TRIALS,
+  DETECTION_POWER_GATE_MIN_RATE,
+  FALSE_POSITIVE_GATE_MAX_FIRES,
+  runNullPairCalibration,
+  runPlantedDegradationCalibration,
+  type CalibrationResult,
+} from "./core/calibration.js";
 export {
   assertRebaselined,
   hasRebaselineRunGroup,

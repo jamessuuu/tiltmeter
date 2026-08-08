@@ -8,10 +8,13 @@ artifact, pinned to a commit and probed with deterministic scorers; every
 published number is scoped to `(suite, harness commit, model)`, never to a
 model alone.
 
-> **Status: pre-release scaffold (M0).** The API in [docs/SPEC.md](docs/SPEC.md)
+> **Status: pre-release (M0–M3 landed).** The API in [docs/SPEC.md](docs/SPEC.md)
 > is designed and frozen for v1; implementation is landing milestone by
-> milestone. Nothing below claims to work until its milestone's tests say
-> so — this README grows only as fast as the receipts do.
+> milestone. The runner, the attribution model, and the calibrated
+> classifier are real and tested; the Anthropic client, the observatory's
+> own suites, and the site are not built yet (M4–M8). Nothing below claims
+> to work until its milestone's tests say so — this README grows only as
+> fast as the receipts do.
 
 ## Why
 
@@ -74,8 +77,21 @@ attribution model it is built on land first.
 | M0 | Workspace, TS strict, ESLint 9, Vitest 4, 5-stage CI, LICENSE, SECURITY.md | done |
 | M1 | Walking skeleton: suite schema, `skill-tool@1` presentation, 3 scorers, `FakeModelClient`, `run`, `compare` (mean delta) | done |
 | M2 | Attribution: axis tuple, run groups, `cannot-attribute`, rebaseline, hash-chained index, `verify` | done |
-| M3 | Statistics: seeded paired bootstrap, MDE, per-metric verdicts, calibration sims | not started |
+| M3 | Statistics: seeded paired bootstrap, MDE, per-metric verdicts, calibration sims | done |
 | M4–M8 | Real client, the observatory's own suites, the site, scheduled workflows, npm publish | not started |
+
+## Calibration
+
+<!-- calibration:begin -->
+**Calibration (SPEC §12)** — seeded simulation, `B = 10,000` bootstrap resamples per trial, `40`-item pool, `200` trials per gate:
+
+| gate | bar | achieved |
+|---|---|---|
+| false-positive rate — 200 null pairs, identical per-item rates | ≤ 5% (CI gate: ≤ 8/200) | **0.0%** (0/200) |
+| detection power — 200 pairs, planted 20% degradation (8 of 40 items) | ≥ 90% | **95.0%** (190/200) |
+
+Regenerate with `pnpm calibration` — deterministic, seeded, $0. Full detail in [evals/calibration/RESULTS.md](evals/calibration/RESULTS.md).
+<!-- calibration:end -->
 
 ## Non-goals for this package specifically
 

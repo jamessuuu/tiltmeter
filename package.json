@@ -13,6 +13,8 @@
     "test": "vitest run",
     "build": "pnpm -r build",
     "eval": "vitest run --project eval",
+    "calibration": "pnpm --filter tiltmeter build && node scripts/calibration-report.mjs",
+    "calibration:check": "node scripts/calibration-report.mjs --check",
     "ci:pack-check": "node scripts/pack-check.mjs"
   },
   "devDependencies": {
