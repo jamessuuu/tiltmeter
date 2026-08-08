@@ -59,18 +59,64 @@ export interface ModelTrialResponse {
 export interface NoResultTrial {
   outcome: "noResult";
   reason: string;
+  /**
+   * SPEC §9 "Model id 404 / retired": set when the provider reports the
+   * requested model id itself does not exist / has been retired — distinct
+   * from a transient failure. The reading-builder (`core/run.ts`) treats
+   * ANY trial carrying this flag as evidence the whole cell is
+   * unattemptable and marks the reading `status: "unavailable"` rather than
+   * `"partial"`, short-circuiting the rest of that cell (SPEC: "cell
+   * unavailable, run continues [to the next cell]").
+   */
+  modelUnavailable?: boolean;
 }
 
 export type TrialResult =
   | { outcome: "ok"; response: ModelTrialResponse }
   | NoResultTrial;
 
+/** SPEC §7 `plan`: the free `count_tokens` endpoint result for one rendered request — exact, per model (so the 4.7+ tokenizer inflation is measured, not guessed). */
+export interface TokenCountResult {
+  inputTokens: number;
+}
+
+/** One request in a Batch API submission (SPEC §9): `customId` is the caller's deterministic `sha256(runGroup,suite,item,trial)` (`core/batch.ts`), computed and recorded by the caller before this is ever sent. */
+export interface BatchRequestItem {
+  customId: string;
+  plan: RequestPlan;
+}
+
+export interface BatchSubmission {
+  batchId: string;
+}
+
+export interface BatchPollResult {
+  ended: boolean;
+}
+
+/** One request's outcome inside a completed (or partially-completed) batch, keyed by the same `customId` it was submitted with. `result` is `noResult` (never a thrown error) for an errored/expired/canceled request — batch failures are data, not exceptions, so the orchestrator can apply SPEC §9's one-retry-of-the-failed-subset rule uniformly. */
+export interface BatchResultItem {
+  customId: string;
+  result: TrialResult;
+}
+
 export interface ModelClient {
   /**
    * Run one independent trial (SPEC §3.2: k repeats at t=1.0, no seed
    * parameter exists on the API — that is why `attempt` is passed through
    * for FakeModelClient's per-(item,attempt) scripting rather than being
-   * used as a seed).
+   * used as a seed). `modelIdRequested` is a per-CALL parameter, not baked
+   * into the client instance — one `ModelClient` serves every cell of a run
+   * group (SPEC §4: a run group fills every cell of `panel × suites`), and
+   * different cells request different models. `RequestPlan` itself (SPEC
+   * §7) stays model-independent — a presentation renders once per suite.
    */
-  runTrial(plan: RequestPlan, attempt: number): Promise<TrialResult>;
+  runTrial(plan: RequestPlan, attempt: number, modelIdRequested: string): Promise<TrialResult>;
+  /** SPEC §7 `plan`: exact input-token count for a rendered request, per model (so the 4.7+ tokenizer inflation is measured, not guessed). Free — never counted against any spend cap. */
+  countTokens(plan: RequestPlan, modelIdRequested: string): Promise<TokenCountResult>;
+  /** SPEC §9: submit many requests — all for the SAME cell, hence the same model — as one batch job. */
+  submitBatch(requests: BatchRequestItem[], modelIdRequested: string): Promise<BatchSubmission>;
+  pollBatch(batchId: string): Promise<BatchPollResult>;
+  /** Only meaningful once `pollBatch` reports `ended: true`. */
+  fetchBatchResults(batchId: string): Promise<BatchResultItem[]>;
 }

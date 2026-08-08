@@ -6,6 +6,115 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- M4 (real client — docs/SPEC.md §14/§7/§8/§9): `src/client/anthropic.ts`
+  (`AnthropicModelClient`) implements the extended `ModelClient` interface
+  (`core/model-client.ts` now carries `countTokens`/`submitBatch`/
+  `pollBatch`/`fetchBatchResults` alongside `runTrial`, every method taking
+  `modelIdRequested` as an explicit per-call parameter since one client
+  instance serves every cell of a run group) — Messages API, the free
+  `count_tokens` endpoint, the Message Batches API, and full-jitter backoff
+  (`src/client/backoff.ts`: ≤3 attempts, `Retry-After` honoured, injectable
+  random/sleep so tests never wait or touch a real socket). A 404 is
+  detected and returned as `noResult` with `modelUnavailable: true`
+  (never retried); every other non-2xx is classified retryable/not and
+  never echoes the raw provider body (SECURITY.md). `FakeModelClient`
+  (`src/testing`) now implements the full interface too — `countTokens` via
+  a scriptable heuristic, batch ops as an in-memory simulation over the
+  same per-(item,attempt) script, plus `scriptByCustomId` for batch-specific
+  tests — so the whole M4 surface stays testable at $0 with zero network.
+
+  New pure `core/` modules: `pricing.ts` (a dated, checked-in manifest —
+  `observatory/pricing/pricing.2026-08-08.json` — with per-model dated rate
+  rows; `selectPricingRow` picks the row whose `[effectiveFrom,
+  effectiveTo)` window contains the request date, so the Sonnet 5 intro
+  price change on 2026-08-31 selects the right row from data, never a
+  hardcoded constant); `cost.ts` (the `--offline` chars/4 input-token
+  heuristic, scaled by the manifest's per-model `estimateMultiplier` — 1.3x
+  for Fable 5, the one SPEC §8 names); `caps.ts` (`DEFAULT_CAPS` =
+  `{maxRunUsd:3, maxCellUsd:1.5, maxMonthUsd:15}`; `checkCaps`/
+  `assertWithinCaps` for `plan`-time estimates, `capBreachAfterCell` for
+  `run`-time re-checks against ACTUAL usage after each cell; `monthToDateUsd`
+  sums the committed `readings/index.json`, never a guess); `batch.ts`
+  (`batchCustomId = sha256(runGroup,suite,item,trial)`; `RunRecord`/
+  `RunRecordCell` schemas; `submitCellBatch`'s `hasRecordedBatch` guard is
+  the WHOLE duplicate-spend rule — a cell with a recorded `batchId` is
+  returned unchanged, `client.submitBatch` is never called again;
+  `collectCellBatchResults` + `retryCellBatch` implement the one-retry-of-
+  the-failed-subset rule, tracked as its own generation counter
+  (`retriedCustomIds`/`retryBatchId`) rather than overloading the existing
+  per-trial `attempt` field — a recorded, deliberate deviation from a
+  literal reading of SPEC §9's "recorded as attempt: 2"); `plan.ts`
+  (`Panel`/`PlanCell`/`Plan` schemas, `hasNullPair`, `buildPlan` — exact
+  `count_tokens`-driven estimates when a client is given, the offline
+  heuristic when not, cap-checked via `assertWithinCaps` before ever
+  returning a plan; `assertPlanFresh` throws `E_PLAN_STALE` when a suite's
+  current hash no longer matches what `plan.json` pinned).
+
+  `core/run.ts` is refactored (behavior-preserving for the sync path,
+  verified by the unchanged M1-M3 `run.test.ts`): the trial-scoring/
+  completeness/metrics/bodyHash logic is factored out as
+  `buildReadingFromTrials`, shared by `runSuite` (sync) and the new batch
+  path so both modes assemble a reading under IDENTICAL rules. New:
+  `finalizeReading` (recompute `bodyHash`, used by every mutator below),
+  `attachReadingCost` (adds SPEC §3.3's `cost` block after real usage/
+  pricing is known), `buildNeverAttemptedAbortedReading` (SPEC §8's cap-
+  abort path — every expected trial `noResult`, `status: "aborted"`,
+  `abortedBy: "cap"`, never a silent skip). `Reading`'s schema gains
+  `cost` (optional — every M1-M3 fixture stays valid), `abortedBy`, and a
+  fifth `status` value `"unavailable"` (SPEC §9's 404/retired row — ANY
+  trial flagged `modelUnavailable` forces the whole reading unavailable
+  rather than partial; falls through `compare.ts`'s existing
+  `status !== "complete" => cannot-attribute` gate unchanged).
+  `readings/index.json` entries gain an optional `reason` field (for
+  `skipped`/`aborted` entries).
+
+  `core/run-orchestrator.ts`'s `executeRunGroup` ties it together: one pass
+  over a run group's cells (sync via `runSuite`, batch via submit→collect→
+  retry-once→build), attaching real cost after each cell, calling
+  `capBreachAfterCell` against ACTUAL usage — a breach makes every
+  SUBSEQUENT cell (not the one that tripped it, which already spent)
+  become a never-attempted `aborted` reading, `runRecord.abortedBy: "cap"`.
+  An `onCellUpdate` hook lets the CLI layer persist `run.json` after every
+  submit/collect/retry, not just once at the end.
+
+  New `src/node/observatory.ts` (SPEC §6: "src/node — fs, git
+  introspection, config loader") — the one place besides `cli/verify.ts`
+  that touches `node:fs` for `observatory/**`, so every file-shape decision
+  (suites, presentations, panel, pricing, `plan.json`/`run.json` living
+  under `readings/<rg>/`, readings, the index chain) is made once. New CLI
+  subcommands `tiltmeter plan` and `tiltmeter run` (`src/cli/commands/`):
+  `plan` builds the full suites×panel matrix, estimates cost (exact
+  on-key, `--offline` heuristic off-key — refuses without a key unless
+  `--offline`), cap-checks, writes `plan.json`; `run` re-validates
+  freshness (`E_PLAN_STALE` → exit 5), refuses to start fresh over an
+  existing `run.json` (must pass `--resume`), writes a `skipped` index
+  entry and exits clean BEFORE spending anything when `ANTHROPIC_API_KEY`
+  is unset (SPEC §8's 60-day mitigation: still a commit), otherwise
+  executes via `executeRunGroup` and writes readings + `run.json` + an
+  index-chain entry. `runCli` gained an optional `deps` parameter
+  (`buildClient`/`now`/`harnessCommit`) — `src/cli/index.ts` (the bin)
+  never passes it (real client, real clock); every test does, which is
+  what makes the full CLI wiring testable at $0 with zero network.
+  New `src/cli/exit-codes.ts` (`CLI_EXIT`, re-exported from `cli/run.ts`
+  for backward compatibility): `CAP_REFUSED = 3`, `PLAN_STALE = 5`.
+
+  `.github/workflows/ci.yml` gains a `workflow_dispatch` trigger and a
+  `live-smoke` job (SPEC §12: "`--sync --limit 2 --model claude-haiku-4-5`,
+  ≈$0.002. Never on PRs.") — wired but deliberately UNEXECUTED per SPEC
+  §14's own M4 gate: no `ANTHROPIC_API_KEY` secret is configured on this
+  repo yet, and `observatory/suites/` is empty until M5, so the job
+  safely no-ops on both counts even if manually dispatched.
+
+  Gate (docs/SPEC.md §14 M4: "Fake-client tests for every §9 row; live
+  smoke on dispatch costs <$0.01"): every §9 failure-contract row that
+  applies at M4 has a passing fake-client (or mocked-fetch) test —
+  backoff/Retry-After/≤3-attempts, truncation→noResult, partial/denominator
+  invariants (unchanged from M1-M3), the duplicate-spend guard, the
+  batch-expiry one-retry rule, cap-trip mid-run abort, model-404→
+  unavailable, missing-key→skipped, and stale-plan→`E_PLAN_STALE`. Live
+  smoke stays wired-but-unexecuted, exactly as scoped. 253 tests green (26
+  files), zero regressions to the 162 from M0-M3.
+
 - M3 (statistics, offline, $0 — docs/SPEC.md §14 / §5): `core/stats.ts`'s
   `pairedPercentileBootstrap` — the seeded paired percentile bootstrap over
   ITEMS (not trials), `B = 10,000` resamples, 95% CI via nearest-rank

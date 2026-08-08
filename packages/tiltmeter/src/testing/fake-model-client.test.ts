@@ -19,7 +19,7 @@ describe("FakeModelClient", () => {
     const client = new FakeModelClient({
       script: { "item-1": { 1: toolUseTrial("Skill", { skill: "taste" }) } },
     });
-    const result = await client.runTrial(plan("item-1"), 1);
+    const result = await client.runTrial(plan("item-1"), 1, "fake-model-1");
     expect(result.outcome).toBe("ok");
     if (result.outcome === "ok") {
       expect(result.response.toolUseBlocks[0]?.name).toBe("Skill");
@@ -30,15 +30,15 @@ describe("FakeModelClient", () => {
     const client = new FakeModelClient({
       script: { "item-1": { 1: toolUseTrial("Skill", {}), 2: noToolTrial() } },
     });
-    const first = await client.runTrial(plan("item-1"), 1);
-    const second = await client.runTrial(plan("item-1"), 2);
+    const first = await client.runTrial(plan("item-1"), 1, "fake-model-1");
+    const second = await client.runTrial(plan("item-1"), 2, "fake-model-1");
     expect(first.outcome === "ok" && first.response.toolUseBlocks.length).toBe(1);
     expect(second.outcome === "ok" && second.response.toolUseBlocks.length).toBe(0);
   });
 
   it("falls back to a default (no tool called) when unscripted", async () => {
     const client = new FakeModelClient({ script: {} });
-    const result = await client.runTrial(plan("unscripted-item"), 1);
+    const result = await client.runTrial(plan("unscripted-item"), 1, "fake-model-1");
     expect(result.outcome).toBe("ok");
     if (result.outcome === "ok") {
       expect(result.response.toolUseBlocks).toHaveLength(0);
@@ -47,7 +47,7 @@ describe("FakeModelClient", () => {
 
   it("honors a custom fallback", async () => {
     const client = new FakeModelClient({ script: {}, fallback: noResultTrial("no script") });
-    const result = await client.runTrial(plan("unscripted-item"), 1);
+    const result = await client.runTrial(plan("unscripted-item"), 1, "fake-model-1");
     expect(result.outcome).toBe("noResult");
   });
 
@@ -55,7 +55,7 @@ describe("FakeModelClient", () => {
     const client = new FakeModelClient({
       script: { "item-1": { 1: noResultTrial("simulated 529, retries exhausted") } },
     });
-    const result = await client.runTrial(plan("item-1"), 1);
+    const result = await client.runTrial(plan("item-1"), 1, "fake-model-1");
     expect(result).toEqual({ outcome: "noResult", reason: "simulated 529, retries exhausted" });
   });
 });

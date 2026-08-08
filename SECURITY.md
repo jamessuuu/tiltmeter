@@ -8,7 +8,7 @@ criteria); each is marked with the milestone where its enforcement surface
 lands. "Applies from M`n`" means the surface already exists and the rule is
 live today, not a promise.
 
-## BYOK: `ANTHROPIC_API_KEY` handling — lands at M4
+## BYOK: `ANTHROPIC_API_KEY` handling — applies from M4
 
 The key is read from the environment only — never a CLI flag (shell
 history), never written to disk, never sent anywhere but `api.anthropic.com`.
@@ -22,7 +22,7 @@ suite, a presentation, a reading, the readings index — is a committed JSON
 file, canonicalized (docs/SPEC.md §3.3) and hash-chained. Git history is the
 audit log; there is nothing else to secure or leak.
 
-## Typed error taxonomy — no provider strings echoed — lands at M4
+## Typed error taxonomy — no provider strings echoed — applies from M4
 
 `core/errors.ts` (from M0) defines the closed set of error codes
 (`E_CAP`, `E_PLAN_STALE`, `E_AXIS_CONFLICT`, `E_PARTIAL`, `E_PROVENANCE`,
@@ -61,7 +61,7 @@ different snapshot between run groups, that is published as a
 `provider-substitution` event and every comparison across it is
 `cannot-attribute` — never averaged through as if nothing happened.
 
-## Crash / resume never double-spends — lands at M4
+## Crash / resume never double-spends — applies from M4
 
 `run --resume` reconstructs a reading from committed batch ids and never
 re-submits a cell that already has one recorded. Deterministic
@@ -69,7 +69,7 @@ re-submits a cell that already has one recorded. Deterministic
 submission, so a crash between submit and write cannot cause a duplicate
 charge.
 
-## Cost caps — provider console limit + runner-enforced caps — lands at M4 (runner) / M7 (console + schedule)
+## Cost caps — provider console limit + runner-enforced caps — runner-enforced caps apply from M4; the console workspace limit lands at M7
 
 Two independent layers (docs/SPEC.md §8): a dedicated Anthropic API key with
 a monthly spend limit set in the console (the only cap that survives a
@@ -78,7 +78,7 @@ tracked in the committed index. A cap trip stops submission and writes the
 reading `aborted` — never a silent skip, never a partial reading presented
 as complete.
 
-## Suite edited between plan and run (`E_PLAN_STALE`) — lands at M4 / M7
+## Suite edited between plan and run (`E_PLAN_STALE`) — applies from M4 (the schedule that could trigger it lands at M7)
 
 `plan.json` pins the `suiteSpecHash` it was built from; a mismatch at `run`
 time is a usage error (exit 4, "re-plan"), not a silent re-plan on the

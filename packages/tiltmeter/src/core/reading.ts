@@ -86,9 +86,27 @@ export const CompletenessSchema = z.object({
 });
 export type Completeness = z.infer<typeof CompletenessSchema>;
 
-/** SPEC §9: any noResult > 0 => "partial"; a cap trip => "aborted"; no key / suite unreachable => "skipped" (M4/M7). */
-export const ReadingStatusSchema = z.enum(["complete", "partial", "aborted", "skipped"]);
+/**
+ * SPEC §9: any noResult > 0 => "partial"; a cap trip => "aborted"; no key /
+ * suite unreachable => "skipped" (M7); a requested model id that the
+ * provider reports as 404/retired => "unavailable" (M4 — every trial in the
+ * cell carried `NoResultTrial.modelUnavailable`, so `"partial"` would
+ * understate what happened: nothing about this cell is trustworthy, not
+ * just some of it). All four non-`"complete"` statuses already flow through
+ * `compare.ts`'s `status !== "complete" => cannot-attribute(["incomplete"])`
+ * gate unchanged — adding a status here needed no change there.
+ */
+export const ReadingStatusSchema = z.enum(["complete", "partial", "aborted", "skipped", "unavailable"]);
 export type ReadingStatus = z.infer<typeof ReadingStatusSchema>;
+
+/** SPEC §3.3 `cost` block — added at M4 (the real client is what makes `actualUsd` a real number rather than undefined-forever). Optional on the schema so every M1–M3 reading fixture (built before pricing existed) stays valid. */
+export const ReadingCostSchema = z.object({
+  estimatedUsd: z.number().nonnegative(),
+  actualUsd: z.number().nonnegative(),
+  pricingManifest: z.string().min(1),
+  mode: z.enum(["batch", "sync"]),
+});
+export type ReadingCost = z.infer<typeof ReadingCostSchema>;
 
 export const ReadingSchema = z.object({
   formatVersion: z.literal(1),
@@ -102,9 +120,13 @@ export const ReadingSchema = z.object({
   startedAt: z.string().min(1),
   finishedAt: z.string().min(1),
   status: ReadingStatusSchema,
+  /** SPEC §8: set only on `status: "aborted"` readings produced by a cap trip — the machine-readable half of "writes the reading as aborted with abortedBy: 'cap'". */
+  abortedBy: z.enum(["cap"]).optional(),
   completeness: CompletenessSchema,
   metrics: z.record(z.string(), z.number()),
   items: z.array(ItemReadingSchema),
+  /** M4+ — absent on readings built before pricing existed (M1–M3 fixtures) or when cost is not yet known. */
+  cost: ReadingCostSchema.optional(),
   /** sha256 of the canonicalized reading with `bodyHash` itself excluded (same shape as suiteSpecHash's `docs` exclusion). */
   bodyHash: z.string().min(1),
 });

@@ -46,11 +46,16 @@ export {
   type Presentation,
 } from "./core/presentation.js";
 export type {
+  BatchPollResult,
+  BatchRequestItem,
+  BatchResultItem,
+  BatchSubmission,
   ModelClient,
   ModelTrialResponse,
   NoResultTrial,
   RequestPlan,
   StopReason,
+  TokenCountResult,
   TokenUsage,
   ToolChoice,
   ToolDef,
@@ -66,6 +71,7 @@ export {
   ItemReadingSchema,
   parseReading,
   ReadingAxesSchema,
+  ReadingCostSchema,
   ReadingSchema,
   ReadingStatusSchema,
   TrialOutcomeSchema,
@@ -76,11 +82,22 @@ export {
   type ItemReading,
   type Reading,
   type ReadingAxes,
+  type ReadingCost,
   type ReadingStatus,
   type Trial,
   type TrialOutcome,
 } from "./core/reading.js";
-export { computeMetrics, runSuite, type RunContext } from "./core/run.js";
+export {
+  attachReadingCost,
+  buildNeverAttemptedAbortedReading,
+  buildReadingFromTrials,
+  computeMetrics,
+  finalizeReading,
+  runSuite,
+  type ReadingWithoutHash,
+  type RunContext,
+  type TrialOutcomeRecord,
+} from "./core/run.js";
 export {
   buildItemComparisons,
   classify,
@@ -139,3 +156,74 @@ export {
   type GitPreRegistrationNotImplemented,
   type ReadingVerifyResult,
 } from "./core/verify.js";
+
+// M4 (SPEC §14): real client scaffolding, cost/caps/batch/plan/orchestration.
+export {
+  parsePricingManifest,
+  priceUsage,
+  selectPricingRow,
+  toDateOnly,
+  PricingManifestSchema,
+  PricingModelEntrySchema,
+  PricingRateSchema,
+  PricingRowSchema,
+  type PricingManifest,
+  type PricingModelEntry,
+  type PricingRate,
+  type PricingRow,
+} from "./core/pricing.js";
+export { offlineEstimatedInputTokens } from "./core/cost.js";
+export {
+  assertWithinCaps,
+  capBreachAfterCell,
+  checkCaps,
+  monthToDateUsd,
+  CapsSchema,
+  DEFAULT_CAPS,
+  type CapCheckInput,
+  type CapCheckResult,
+  type CapGate,
+  type Caps,
+  type CapViolation,
+  type CapViolationKind,
+} from "./core/caps.js";
+export {
+  batchCustomId,
+  collectCellBatchResults,
+  computeCellCustomIds,
+  hasRecordedBatch,
+  parseRunRecord,
+  retryCellBatch,
+  submitCellBatch,
+  RunRecordCellSchema,
+  RunRecordCellStatusSchema,
+  RunRecordSchema,
+  type CollectBatchOutcome,
+  type RunRecord,
+  type RunRecordCell,
+  type RunRecordCellStatus,
+} from "./core/batch.js";
+export {
+  activeItemCount,
+  assertPlanFresh,
+  buildPlan,
+  hasNullPair,
+  parsePanel,
+  parsePlan,
+  PanelEntrySchema,
+  PanelSchema,
+  PlanCellSchema,
+  PlanSchema,
+  type BuildPlanOptions,
+  type Panel,
+  type PanelEntry,
+  type Plan,
+  type PlanCell,
+  type PlanCellInput,
+} from "./core/plan.js";
+export {
+  executeRunGroup,
+  type RunGroupCellInput,
+  type RunGroupOptions,
+  type RunGroupResult,
+} from "./core/run-orchestrator.js";

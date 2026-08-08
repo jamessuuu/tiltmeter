@@ -5,14 +5,23 @@
  * `src/cli/index.ts` (the bin), which just forwards real argv/streams/env
  * here (mirrors snapgauge's `runCli` shape).
  *
- * M0/M1: the program shell + version/help only. Subcommands land milestone
- * by milestone — SPEC §7's full table is `init`, `lint`, `plan`, `run`,
- * `compare`, `report`, `verify`. `verify` lands at M2 (this file); the rest
- * follow at M4/M5 once the real client and observatory exist.
+ * M0/M1: the program shell + version/help only. M2 added `verify`. M4 adds
+ * `plan` and `run` — both accept an optional `deps.buildClient` (defaults
+ * to the real `AnthropicModelClient`) so `run.test.ts`/`plan.test.ts`/
+ * `run-command.test.ts` can inject a `FakeModelClient` and stay at $0 with
+ * zero network (SPEC §9/§12: "NO live smoke run", "NO network in tests").
+ * `init`, `lint`, `compare`, `report` remain M5/M8 territory.
  */
 import { Command } from "commander";
 import { TILTMETER_VERSION } from "../core/version.js";
+import type { ModelClient } from "../core/model-client.js";
+import { AnthropicModelClient } from "../client/anthropic.js";
 import { runVerify } from "./verify.js";
+import { runPlanCommand, type PlanCommandOptions } from "./commands/plan.js";
+import { runRunCommand, type RunCommandOptions } from "./commands/run.js";
+import { CLI_EXIT } from "./exit-codes.js";
+
+export { CLI_EXIT } from "./exit-codes.js";
 
 export interface CliIo {
   stdout: (text: string) => void;
@@ -22,6 +31,13 @@ export interface CliIo {
 export interface CliEnv {
   cwd: string;
   env: Record<string, string | undefined>;
+}
+
+/** Test-only dependency injection point — every field defaults to the real thing (a real client, a real clock). Never constructed by `src/cli/index.ts` (the bin), which always uses the defaults. */
+export interface CliDeps {
+  now?: () => string;
+  buildClient?: (apiKey: string) => ModelClient;
+  harnessCommit?: string;
 }
 
 /** Signals a specific process exit code from inside a Commander action, distinct from commander's own usage-error path (always `CLI_EXIT.USAGE`). */
@@ -34,7 +50,15 @@ class CliExitError extends Error {
   }
 }
 
-function buildProgram(io: CliIo, env: CliEnv): Command {
+function defaultNow(): string {
+  return new Date().toISOString();
+}
+
+function defaultBuildClient(apiKey: string): ModelClient {
+  return new AnthropicModelClient({ apiKey });
+}
+
+function buildProgram(io: CliIo, env: CliEnv, deps: Required<CliDeps>): Command {
   const program = new Command();
   program
     .name("tiltmeter")
@@ -63,22 +87,71 @@ function buildProgram(io: CliIo, env: CliEnv): Command {
       if (!result.ok) throw new CliExitError(CLI_EXIT.VERIFY_FAILED);
     });
 
+  program
+    .command("plan")
+    .description("Build the run matrix, estimate cost, cap-check it, and write plan.json (SPEC §7).")
+    .requiredOption("--run-group <id>", "run group id, e.g. rg-20260815-1")
+    .option("--offline", "skip count_tokens; fall back to the manifest heuristic (marks the estimate approximate)", false)
+    .option("--mode <mode>", "batch (default, -50%) or sync", "batch")
+    .option("--suites <ids>", "comma-separated suite ids to include (default: every suite in observatory/suites/)")
+    .option("--date <date>", "YYYY-MM-DD pricing-effective date (default: today)")
+    .action(async (opts: { runGroup: string; offline: boolean; mode: string; suites?: string; date?: string }) => {
+      if (opts.mode !== "batch" && opts.mode !== "sync") throw new CliExitError(CLI_EXIT.USAGE);
+      const options: PlanCommandOptions = {
+        offline: opts.offline,
+        mode: opts.mode,
+        runGroupId: opts.runGroup,
+        suiteIds: opts.suites?.split(",").map((s) => s.trim()).filter((s) => s.length > 0),
+        date: opts.date,
+      };
+      const code = await runPlanCommand(io, options, {
+        cwd: env.cwd,
+        now: deps.now,
+        env: env.env,
+        buildClient: deps.buildClient,
+      });
+      if (code !== CLI_EXIT.CLEAN) throw new CliExitError(code);
+    });
+
+  program
+    .command("run")
+    .description("Execute a pinned plan.json — submit/collect trials, re-check caps, write readings (SPEC §7/§9).")
+    .requiredOption("--plan <runGroupId>", "run group id whose plan.json to execute")
+    .option("--resume", "resume an existing (partial) run rather than starting fresh", false)
+    .option("--batch", "force batch mode (must match plan.json)")
+    .option("--sync", "force sync mode (must match plan.json)")
+    .action(async (opts: { plan: string; resume: boolean; batch?: boolean; sync?: boolean }) => {
+      if (opts.batch === true && opts.sync === true) throw new CliExitError(CLI_EXIT.USAGE);
+      const options: RunCommandOptions = {
+        runGroupId: opts.plan,
+        resume: opts.resume,
+        mode: opts.batch === true ? "batch" : opts.sync === true ? "sync" : undefined,
+      };
+      const code = await runRunCommand(io, options, {
+        cwd: env.cwd,
+        now: deps.now,
+        env: env.env,
+        buildClient: deps.buildClient,
+        harnessCommit: deps.harnessCommit,
+      });
+      if (code !== CLI_EXIT.CLEAN) throw new CliExitError(code);
+    });
+
   return program;
 }
-
-/** Exit codes (SPEC §13 typed error taxonomy; usage errors are always 4). */
-export const CLI_EXIT = {
-  CLEAN: 0,
-  VERIFY_FAILED: 1,
-  USAGE: 4,
-} as const;
 
 export async function runCli(
   argv: string[],
   io: CliIo,
   env: CliEnv,
+  deps: CliDeps = {},
 ): Promise<number> {
-  const program = buildProgram(io, env);
+  const resolvedDeps: Required<CliDeps> = {
+    now: deps.now ?? defaultNow,
+    buildClient: deps.buildClient ?? defaultBuildClient,
+    harnessCommit: deps.harnessCommit ?? "unknown",
+  };
+  const program = buildProgram(io, env, resolvedDeps);
   try {
     await program.parseAsync(argv, { from: "user" });
     return CLI_EXIT.CLEAN;

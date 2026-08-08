@@ -27,6 +27,8 @@ export const IndexEntrySchema = z.object({
   /** SPEC §8's 60-day mitigation: a "skipped" entry (no key / cap already spent) is still a commit — the chain never silently stops. */
   status: ReadingStatusSchema,
   costUsd: z.number().nonnegative(),
+  /** SPEC §8/§9: the human-readable reason behind a `skipped` or `aborted` entry ("no key", "cap reached", …) — never omitted for those two statuses, so the mitigation commit is legible on its own. Optional so a `complete` entry (M2's shape) is unaffected. */
+  reason: z.string().optional(),
   hash: z.string().min(1),
   /** `null` only for the chain's first entry. */
   prevHash: z.string().nullable(),

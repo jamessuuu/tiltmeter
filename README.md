@@ -8,11 +8,13 @@ artifact, pinned to a commit and probed with deterministic scorers; every
 published number is scoped to `(suite, harness commit, model)`, never to a
 model alone.
 
-> **Status: pre-release (M0–M3 landed).** The API in [docs/SPEC.md](docs/SPEC.md)
+> **Status: pre-release (M0–M4 landed).** The API in [docs/SPEC.md](docs/SPEC.md)
 > is designed and frozen for v1; implementation is landing milestone by
-> milestone. The runner, the attribution model, and the calibrated
-> classifier are real and tested; the Anthropic client, the observatory's
-> own suites, and the site are not built yet (M4–M8). Nothing below claims
+> milestone. The runner, the attribution model, the calibrated classifier,
+> and the real Anthropic client (batch + sync + cost planning + caps) are
+> real and tested; the observatory's own suites and the site are not built
+> yet (M5–M8), and no real reading has ever been taken — every M4 test uses
+> a fake client or a mocked `fetch`, $0, zero network. Nothing below claims
 > to work until its milestone's tests say so — this README grows only as
 > fast as the receipts do.
 
@@ -78,7 +80,8 @@ attribution model it is built on land first.
 | M1 | Walking skeleton: suite schema, `skill-tool@1` presentation, 3 scorers, `FakeModelClient`, `run`, `compare` (mean delta) | done |
 | M2 | Attribution: axis tuple, run groups, `cannot-attribute`, rebaseline, hash-chained index, `verify` | done |
 | M3 | Statistics: seeded paired bootstrap, MDE, per-metric verdicts, calibration sims | done |
-| M4–M8 | Real client, the observatory's own suites, the site, scheduled workflows, npm publish | not started |
+| M4 | Real client: Messages + Batch + `count_tokens`, pricing manifest, caps, `custom_id`/`--resume`, `tiltmeter plan`/`run` | done |
+| M5–M8 | The observatory's own suites, the site, scheduled workflows, npm publish | not started |
 
 ## Calibration
 

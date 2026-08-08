@@ -1,0 +1,64 @@
+{
+  "formatVersion": 1,
+  "id": "pricing.2026-08-08",
+  "fetchedAt": "2026-08-08",
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing (verified live 2026-08-08, showcase-program/research/feasibility.md §6)",
+  "assumedOutputTokensPerTrial": 100,
+  "models": [
+    {
+      "modelId": "claude-haiku-4-5",
+      "rows": [
+        {
+          "effectiveFrom": "2026-01-01",
+          "effectiveTo": null,
+          "standard": { "inputPerMTok": 1, "outputPerMTok": 5 },
+          "batch": { "inputPerMTok": 0.5, "outputPerMTok": 2.5 },
+          "estimateMultiplier": 1.0
+        }
+      ]
+    },
+    {
+      "modelId": "claude-sonnet-5",
+      "rows": [
+        {
+          "effectiveFrom": "2026-01-01",
+          "effectiveTo": "2026-08-31",
+          "standard": { "inputPerMTok": 2, "outputPerMTok": 10 },
+          "batch": { "inputPerMTok": 1, "outputPerMTok": 5 },
+          "estimateMultiplier": 1.0
+        },
+        {
+          "effectiveFrom": "2026-08-31",
+          "effectiveTo": null,
+          "standard": { "inputPerMTok": 3, "outputPerMTok": 15 },
+          "batch": { "inputPerMTok": 1.5, "outputPerMTok": 7.5 },
+          "estimateMultiplier": 1.0
+        }
+      ]
+    },
+    {
+      "modelId": "claude-opus-5",
+      "rows": [
+        {
+          "effectiveFrom": "2026-01-01",
+          "effectiveTo": null,
+          "standard": { "inputPerMTok": 5, "outputPerMTok": 25 },
+          "batch": { "inputPerMTok": 2.5, "outputPerMTok": 12.5 },
+          "estimateMultiplier": 1.0
+        }
+      ]
+    },
+    {
+      "modelId": "claude-fable-5",
+      "rows": [
+        {
+          "effectiveFrom": "2026-01-01",
+          "effectiveTo": null,
+          "standard": { "inputPerMTok": 10, "outputPerMTok": 50 },
+          "batch": { "inputPerMTok": 5, "outputPerMTok": 25 },
+          "estimateMultiplier": 1.3
+        }
+      ]
+    }
+  ]
+}

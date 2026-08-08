@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   ci:
@@ -49,3 +50,40 @@ jobs:
         # drift — latest.json no longer matching a fresh run — is the `eval`
         # stage's job, above; this stage only checks the committed docs.
         run: pnpm calibration:check
+
+  # SPEC §12 "Live smoke — workflow_dispatch only: --sync --limit 2 --model
+  # claude-haiku-4-5, ~$0.002. Never on PRs." SPEC §14 M4's own gate ships
+  # this WIRED but UNEXECUTED: no ANTHROPIC_API_KEY secret is configured on
+  # this repo yet, and `observatory/suites/` has nothing to plan against
+  # until M5 lands. The `if` guards below mean this job never runs from a
+  # fork PR (SECURITY.md's boundary) and safely no-ops even on a manual
+  # dispatch until both are true. Never triggered in this session.
+  live-smoke:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'jamessuuu/tiltmeter'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter tiltmeter build
+      - name: live smoke (SPEC §12, ~$0.002; safely skips without a key or suites)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY not configured on this repo yet — live smoke stays unexecuted (SPEC §14 M4)."
+            exit 0
+          fi
+          if [ ! -d observatory/suites ] || [ -z "$(ls -A observatory/suites 2>/dev/null)" ]; then
+            echo "observatory/suites/ is empty — nothing to plan against yet (lands at M5)."
+            exit 0
+          fi
+          RUN_GROUP="smoke-$(date +%s)"
+          node packages/tiltmeter/dist/cli/index.js plan --run-group "$RUN_GROUP" --mode sync
+          node packages/tiltmeter/dist/cli/index.js run --plan "$RUN_GROUP"
