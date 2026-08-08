@@ -1,6 +1,6 @@
 {
   "name": "tiltmeter",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-rc.1",
   "description": "Tell an operator when a new model release moves their agent harness off true. Deterministic, pre-registered, reproducible from a pinned commit.",
   "license": "MIT",
   "author": "James Lorenz Santos",

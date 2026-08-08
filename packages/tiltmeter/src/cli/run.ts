@@ -9,8 +9,8 @@
  * `plan` and `run` — both accept an optional `deps.buildClient` (defaults
  * to the real `AnthropicModelClient`) so tests inject a `FakeModelClient`
  * and stay at $0 with zero network (SPEC §9/§12: "NO live smoke run", "NO
- * network in tests"). M5 adds `lint`. `init`, `compare`, `report` remain
- * M8 territory.
+ * network in tests"). M5 adds `lint`. M8 adds `init` (scaffolding — SPEC
+ * §7/§14). `compare` and `report` remain post-v1 territory.
  */
 import { Command } from "commander";
 import { TILTMETER_VERSION } from "../core/version.js";
@@ -20,6 +20,7 @@ import { runVerify } from "./verify.js";
 import { runPlanCommand, type PlanCommandOptions } from "./commands/plan.js";
 import { runRunCommand, type RunCommandOptions } from "./commands/run.js";
 import { runLintCommand, type LintCommandOptions } from "./commands/lint.js";
+import { runInitCommand, type InitCommandOptions } from "./commands/init.js";
 import { CLI_EXIT } from "./exit-codes.js";
 
 export { CLI_EXIT } from "./exit-codes.js";
@@ -97,6 +98,26 @@ function buildProgram(io: CliIo, env: CliEnv, deps: Required<CliDeps>): Command 
     .action((suiteId: string | undefined) => {
       const options: LintCommandOptions = { suiteId };
       const code = runLintCommand(io, options, { cwd: env.cwd });
+      if (code !== CLI_EXIT.CLEAN) throw new CliExitError(code);
+    });
+
+  program
+    .command("init")
+    .description(
+      "Scaffold a suite from real artifacts — exactly one of --from-skills/--from-mcp/--from-snapgauge (SPEC §7/§14 M8). Never spends.",
+    )
+    .option("--from-skills <dir>", "a directory of <skill-name>/SKILL.md folders (the Claude Code skills convention)")
+    .option("--from-mcp <file>", "a JSON file: an array of tools, or { \"tools\": [...] } (an MCP tools/list dump)")
+    .option("--from-snapgauge <file>", "a snapgauge snapshot JSON file (its tools[] carries real tool schemas — free interop)")
+    .option("--suite-id <id>", "override the generated suite's id (default: from-skills / from-mcp / from-snapgauge)")
+    .action((opts: { fromSkills?: string; fromMcp?: string; fromSnapgauge?: string; suiteId?: string }) => {
+      const options: InitCommandOptions = {
+        fromSkills: opts.fromSkills,
+        fromMcp: opts.fromMcp,
+        fromSnapgauge: opts.fromSnapgauge,
+        suiteId: opts.suiteId,
+      };
+      const code = runInitCommand(io, options, { cwd: env.cwd, now: deps.now });
       if (code !== CLI_EXIT.CLEAN) throw new CliExitError(code);
     });
 

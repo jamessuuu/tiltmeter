@@ -44,7 +44,7 @@ async function writeValidReading(runGroupId: string, cellId: string): Promise<{ 
     runnerBehaviorVersion: RUNNER_BEHAVIOR_VERSION,
     modelIdRequested: "fake-model-1",
     harnessCommit: "0000000000000000000000000000000000000",
-    runnerVersion: "0.1.0-alpha.0",
+    runnerVersion: "1.0.0-rc.1",
     now: () => "2026-08-08T00:00:00.000Z",
   };
   const client = new FakeModelClient({ script: scriptForBehavior(suite, allPassBehavior()) });

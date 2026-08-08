@@ -21,7 +21,7 @@ function reading(overrides: Partial<Reading> = {}): Reading {
     cellId: "cell-a",
     axes: AXES,
     harnessCommit: "0000000000000000000000000000000000000",
-    runnerVersion: "0.1.0-alpha.0",
+    runnerVersion: "1.0.0-rc.1",
     startedAt: "2026-08-08T00:00:00.000Z",
     finishedAt: "2026-08-08T00:00:01.000Z",
     status: "complete",

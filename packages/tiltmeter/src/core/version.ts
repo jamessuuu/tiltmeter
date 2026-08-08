@@ -4,7 +4,7 @@
  * hand at each release; there is no build step that injects it because
  * core must stay zero-I/O (no reading package.json off disk).
  */
-export const TILTMETER_VERSION = "0.1.0-alpha.0";
+export const TILTMETER_VERSION = "1.0.0-rc.1";
 
 /**
  * `runnerBehaviorVersion` (SPEC §3.3, §4 axis tuple) — bumped whenever a

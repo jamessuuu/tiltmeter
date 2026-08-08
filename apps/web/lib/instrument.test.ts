@@ -23,7 +23,7 @@ function reading(overrides: {
       samplingPolicyHash: "sh",
     },
     harnessCommit: "0000000000000000000000000000000000000",
-    runnerVersion: "0.1.0-alpha.0",
+    runnerVersion: "1.0.0-rc.1",
     startedAt: overrides.startedAt,
     finishedAt: overrides.startedAt,
     status: (overrides.status ?? "complete") as "complete",

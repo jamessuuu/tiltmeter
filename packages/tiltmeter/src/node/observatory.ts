@@ -44,6 +44,15 @@ export function readSuite(observatoryDir: string, id: string): Suite {
   return parseSuite(readJson(join(suitesDir(observatoryDir), `${id}.suite.json`)));
 }
 
+export function suiteExists(observatoryDir: string, id: string): boolean {
+  return existsSync(join(suitesDir(observatoryDir), `${id}.suite.json`));
+}
+
+/** M8 `tiltmeter init`: write a NEW suite file. Callers check `suiteExists` first and refuse rather than overwrite (SPEC §3.1 Decision 2: items are immutable — silently replacing a whole suite file is the same class of mistake writ large). */
+export function writeSuite(observatoryDir: string, suite: Suite): void {
+  writeJsonCanonical(join(suitesDir(observatoryDir), `${suite.id}.suite.json`), suite);
+}
+
 /** Every suite file in `observatory/suites/` — order is filesystem order (`readdirSync`'s own, stable on a given OS/filesystem but not guaranteed cross-platform; callers that need a stable order sort by `.id` themselves). */
 export function readAllSuites(observatoryDir: string): Suite[] {
   const dir = suitesDir(observatoryDir);
@@ -57,8 +66,24 @@ export function readPresentation(observatoryDir: string, id: string): Presentati
   return parsePresentation(readJson(join(observatoryDir, "presentations", `${id}.json`)));
 }
 
+/** M8 `tiltmeter init`: write a presentation template ONLY if `presentations/<id>.json` does not already exist — never clobber a project's own customized template. Returns whether it wrote. */
+export function writePresentationIfMissing(observatoryDir: string, presentation: Presentation): boolean {
+  const path = join(observatoryDir, "presentations", `${presentation.id}.json`);
+  if (existsSync(path)) return false;
+  writeJsonCanonical(path, presentation);
+  return true;
+}
+
 export function readPanel(observatoryDir: string): Panel {
   return parsePanel(readJson(join(observatoryDir, "panel.json")));
+}
+
+/** M8 `tiltmeter init`: write `panel.json` ONLY if it does not already exist — never clobber a real panel with the scaffold default. Returns whether it wrote. */
+export function writePanelIfMissing(observatoryDir: string, panel: Panel): boolean {
+  const path = join(observatoryDir, "panel.json");
+  if (existsSync(path)) return false;
+  writeJsonCanonical(path, panel);
+  return true;
 }
 
 /** `manifestId` e.g. `"pricing.2026-08-08"` -> `observatory/pricing/pricing.2026-08-08.json`. Omit to read whichever single manifest file is present (the common case — one dated manifest at a time; a repo with more than one is a caller error, reported clearly rather than silently picking one). */
@@ -73,6 +98,20 @@ export function readPricingManifest(observatoryDir: string, manifestId?: string)
   const [only] = files;
   if (only === undefined) throw new Error("unreachable"); // guarded by the length checks above
   return parsePricingManifest(readJson(join(dir, only)));
+}
+
+/** True when `pricing/` already has ANY manifest file — `readPricingManifest`'s own contract requires exactly one to be present with no id given, so `tiltmeter init` must never write a second one alongside a project's real manifest. */
+export function hasAnyPricingManifest(observatoryDir: string): boolean {
+  const dir = join(observatoryDir, "pricing");
+  if (!existsSync(dir)) return false;
+  return readdirSync(dir).some((f) => f.endsWith(".json"));
+}
+
+/** M8 `tiltmeter init`: write a bundled pricing manifest ONLY when `pricing/` has no manifest at all yet (see `hasAnyPricingManifest`). Returns whether it wrote. */
+export function writePricingManifestIfMissing(observatoryDir: string, manifest: PricingManifest): boolean {
+  if (hasAnyPricingManifest(observatoryDir)) return false;
+  writeJsonCanonical(join(observatoryDir, "pricing", `${manifest.id}.json`), manifest);
+  return true;
 }
 
 function runGroupDir(observatoryDir: string, runGroupId: string): string {

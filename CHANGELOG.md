@@ -6,6 +6,80 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- M8 (publish readiness — docs/SPEC.md §7/§14): `tiltmeter init
+  --from-skills <dir> | --from-mcp <tools.json> | --from-snapgauge <snap.json>`
+  — the scaffolding path that makes this a tool other people can point at
+  THEIR harness, not just James's private observatory. `core/scaffold.ts`
+  (pure) builds a lint-clean `Suite` from real, already-read artifacts,
+  handling the self-referential form of SPEC §3.2's negatives quota
+  (`meetsNegativesQuota` measures 20% of positives+negatives TOGETHER, so
+  `negativeCountFor` iterates to a fixed point rather than solving a closed
+  form); `node/artifact-sources.ts` reads a `SKILL.md` directory (real YAML
+  frontmatter parsing via `js-yaml`) or a tools JSON file, accepting BOTH
+  the Anthropic wire shape (`input_schema`) and the MCP/snapgauge shape
+  (`inputSchema`) in one reader, since a snapgauge snapshot's `tools[]` is
+  the free interop SPEC calls for; `node/observatory.ts` gained
+  `write*IfMissing` helpers so `init` scaffolds `panel.json`, a bundled
+  pricing manifest, and the matching presentation template ONLY when they
+  don't already exist — never clobbering a project's real ones. Every
+  scaffolded item's scenario is an explicit, unmissable `TODO` derived from
+  the artifact's own description — never a fabricated "good" eval prompt
+  (no LLM anywhere in this project, so there is no honest way to
+  synthesize one); negatives reuse a fixed pool of genuinely-fine generic
+  distractor prompts, usable as committed. Every artifact is
+  `source.origin: "private"` — `init` never fabricates public provenance
+  it cannot verify (SPEC §3.1 Decision 1).
+
+  `scripts/pack-check.mjs` gained the tarball smoke test SPEC §14 M8's own
+  gate names: `npm install <tarball>` into a clean scratch directory with
+  none of this monorepo's workspace symlinks, then runs the INSTALLED
+  `tiltmeter` bin through `init` (from a tiny fixture skills directory
+  written inline, no dependency on this repo's own fixtures or this
+  machine's real `~/.claude/skills`) → `lint` → `plan --offline`, asserting
+  all three succeed with `ANTHROPIC_API_KEY` deliberately unset and no
+  network. Verified passing for real during this milestone, not just
+  claimed.
+
+  `.github/workflows/release.yml` (tag-triggered `npm publish`, mirroring
+  snapgauge's and chaff's own `release.yml` stage for stage — "consistency
+  across the five repos is itself a signal"): the full CI gate unabridged,
+  a tag-vs-`package.json`-version consistency check, then
+  `pnpm publish --access public --provenance`. Committed, never run — no
+  tag has been pushed.
+
+  Version → `1.0.0-rc.1` in `packages/tiltmeter/package.json` and
+  `core/version.ts`'s `TILTMETER_VERSION` (plus five test fixtures that
+  happened to hardcode the old string as inert sample data, for
+  consistency — none of them actually asserted against the constant).
+
+  README: the FLAGSHIP-vs-SHARP-TOOL tier statement (SPEC's own PROGRAM.md
+  framing — tiltmeter is P1, a flagship; snapgauge/chaff are sharp tools,
+  named and linked), a `## CLI` section documenting every real subcommand
+  (and explicitly naming `compare`/`report` as NOT yet CLI-wired, rather
+  than letting the table imply they are), the full SPEC §9 failure-mode
+  table, and the SPEC §13 Limitations list verbatim. Harness-behaviour
+  framing, the calibration numbers, and the launch-state honesty sentence
+  were already present from earlier milestones and are unchanged.
+
+  SECURITY.md: re-verified every claim against the actual current code
+  (BYOK's "never a flag" — grepped `cli/run.ts` for any `--api-key` option,
+  none exists; "never sent anywhere but `api.anthropic.com`" — the real
+  client's `baseUrl` is overridable in the class but no CLI wiring ever
+  exposes a way to set it; "no DB" — confirmed against `apps/web/app/**`,
+  zero `route.ts` files, `dynamic = "error"` on every page). No new
+  falsified sentence found this pass — M7's fix (the exit-code claim)
+  covered the one this repo had.
+
+  Gate (docs/SPEC.md §12/§14): 375 tests / 36 files green (335/33 M7
+  baseline + 40 new: `scaffold.ts`'s suite-building and the self-
+  referential negatives-quota fixed point, `artifact-sources.ts`'s
+  frontmatter/tools-JSON parsing incl. malformed-input recovery, and
+  `init`'s own CLI-level tests running the exact `init` → `lint` →
+  `plan --offline` chain for all three source flags through `runCli`
+  itself, not just the underlying functions) — all green, plus the
+  tarball smoke test passing for real against a genuinely `npm install`ed
+  package.
+
 - M7 (workflows — docs/SPEC.md §8/§9/§14): `reading.yml` (weekly
   `cron: '0 3 * * 1'` + `workflow_dispatch`), `release-watch.yml` (daily,
   diffs the live Anthropic Models API against `observatory/models.json`

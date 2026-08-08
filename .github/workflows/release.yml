@@ -1,0 +1,87 @@
+name: release
+
+# Publishes `tiltmeter` to npm (SPEC §2: the only published package) on a
+# `v*` tag push. NEVER run by this build — tags are pushed by James, not by
+# an automated commit, and this workflow is committed but has not been
+# triggered or dry-run against the real npm registry. Mirrors snapgauge's
+# and chaff's `release.yml` (SPEC §14 M8: "consistency across the five
+# repos is itself a signal").
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  # OIDC token for `npm publish --provenance` (SPEC §14 M8) — no long-lived
+  # npm token is exchanged for the signing identity itself; NPM_TOKEN below
+  # is still required for registry AUTH (npm's provenance and auth are
+  # separate concerns), scoped to publish-only.
+  id-token: write
+
+jobs:
+  release:
+    if: github.repository == 'jamessuuu/tiltmeter'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install --frozen-lockfile
+
+      # The full gate, unabridged and stage-for-stage identical to
+      # ci.yml (SPEC §12/§14 D6) — a release workflow that skips its own
+      # CI would defeat the point of the gate; a release can never be
+      # greener than an ordinary push.
+      - name: typecheck
+        run: pnpm typecheck
+      - name: lint
+        run: pnpm lint
+      - name: unit
+        run: pnpm test -- --project unit
+      - name: e2e-smoke (Playwright against the real static export — SPEC §14 M6)
+        run: |
+          npx playwright install --with-deps chromium
+          pnpm e2e
+      - name: brand-drift
+        run: |
+          pnpm brand
+          git diff --exit-code -- apps/web/public/brand
+      - name: eval
+        run: pnpm eval
+
+      # Publish-shape guards (SPEC §14 M7/M8): dist compiles, the packed
+      # tarball's exports/bin resolve to dist/, and a real `npm install
+      # <tarball>` + installed-bin smoke test (init -> lint -> plan --offline,
+      # no key, no network) proves the tarball works standalone before it
+      # ever reaches the registry.
+      - name: build
+        run: pnpm build
+      - name: pack-check
+        run: pnpm ci:pack-check
+      - name: calibration-drift
+        run: pnpm calibration:check
+      - name: lint-workflows
+        run: node scripts/lint-workflow-secrets.mjs
+
+      # The tag and package.json must agree — a tag typo must never publish
+      # the wrong version silently.
+      - name: verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./packages/tiltmeter/package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match packages/tiltmeter/package.json version $PKG_VERSION" >&2
+            exit 1
+          fi
+
+      - name: publish tiltmeter
+        working-directory: packages/tiltmeter
+        run: pnpm publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -252,3 +252,21 @@ export {
 
 // M7 (SPEC §8/§14): the health.yml CI backstop's pure decision (>14 days stale).
 export { computeHealthState, HEALTH_STALE_THRESHOLD_DAYS, newestRealReadingAt, type HealthState } from "./core/health.js";
+
+// M8 (SPEC §7/§14): `tiltmeter init`'s pure suite-building half + the bundled generic templates.
+export {
+  buildSkillActivationSuite,
+  buildToolSelectionSuite,
+  deriveTodoScenario,
+  negativeCountFor,
+  SCAFFOLD_DOCS,
+  SCAFFOLD_METRICS,
+  SCAFFOLD_PANEL,
+  SCAFFOLD_PRICING_MANIFEST,
+  SCAFFOLD_SAMPLING,
+  SCAFFOLD_SKILL_TOOL_PRESENTATION,
+  SCAFFOLD_TOOL_SELECT_PRESENTATION,
+  type BuildScaffoldSuiteOptions,
+  type ScaffoldSkillInput,
+  type ScaffoldToolInput,
+} from "./core/scaffold.js";
