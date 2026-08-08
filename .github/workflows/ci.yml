@@ -26,11 +26,19 @@ jobs:
         run: pnpm lint
       - name: unit
         run: pnpm test -- --project unit
-      - name: e2e-smoke
-        # Becomes real in M6 when apps/web exists (Playwright against the
-        # statically prerendered site). Kept as an explicit no-op stage, not
-        # omitted, so the pipeline shape is stable from the first commit.
-        run: echo "e2e:smoke lands in M6 (apps/web is deferred; deploys are James-gated). Stage intentionally green."
+      - name: e2e-smoke (Playwright against the real static export — SPEC §14 M6)
+        run: |
+          npx playwright install --with-deps chromium
+          pnpm e2e
+      - name: brand-drift
+        # SPEC §13/BRAND-KIT.md: scripts/brand.mjs is deterministic (no
+        # Math.random, no webfont, no network, no date stamping) — CI
+        # regenerates the committed apps/web/public/brand/** assets and
+        # fails on any byte drift, the same pattern as calibration-drift
+        # below for the README block.
+        run: |
+          pnpm brand
+          git diff --exit-code -- apps/web/public/brand
       - name: eval
         # Classifier goldens (>=24 at 100% exact match) + the two calibration
         # gates (FPR <=5%/200, power >=90%/200) — SPEC §12. $0, offline,

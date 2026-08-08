@@ -6,6 +6,99 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- M6 (the site — docs/SPEC.md §14/§10, `apps/web`, Next.js 16.3.0 App
+  Router / React 19.2 / TS strict + `noUncheckedIndexedAccess` / Tailwind 4):
+  five routes, every one prerendered with `output: "export"` (a structural,
+  not conventional, "zero API routes / zero DB / no unauthenticated write
+  path — because there is no write path") AND `export const dynamic =
+  "error"` on every route (SPEC §7's literal words, a second, redundant,
+  self-documenting guard). `/suites/[id]` generates four REAL static pages
+  from M5's committed suites (items, artifacts, provenance, current
+  `suiteSpecHash`); `/readings/[runGroupId]` generates one honest
+  placeholder page (`none-yet`, real content, not a fake reading — see
+  below) since `observatory/readings/` is still empty; `/` is the
+  instrument (per-suite series with SPEC §4 hard-break annotations at every
+  `suiteSpecHash` change, and — with zero readings today — SPEC §11's exact
+  launch-state copy, computed from real suite data: "tiltmeter launched
+  2026-08-09 with 4 pre-registered suites and 108 items…"); `/models` is
+  the death-condition guard made literal — panel/model metadata only, and
+  `e2e/models.spec.ts` asserts structurally (table headers, no numeric
+  value on the page) that no ranking UI exists, not merely that the words
+  "rank"/"score" are absent (the page's own disclaimer prose legitimately
+  contains them); `/methodology` covers presentation templates, all eight
+  scorers, k/temperature and why not 0, the axis rules, the bootstrap, the
+  noise floor, cost policy, and SPEC §13's Limitations verbatim.
+
+  Every page reads `observatory/**` at BUILD TIME ONLY (`apps/web/lib/observatory.ts`,
+  plain Node `fs`, Server Components / `generateStaticParams`) through
+  `tiltmeter`'s OWN Zod schemas via a workspace dependency — SPEC §13's
+  "Zod at every boundary… site build inputs," satisfied by construction: a
+  malformed committed file fails the build, never renders silently wrong.
+  The dead-man banner (`lib/dead-man.ts` + `components/DeadManBanner.tsx`)
+  is deliberately split: a pure `computeDeadManState` (unit-tested at the
+  exact >10-day boundary — 10.0 days not stale, one second past IS stale)
+  driving a CLIENT component that computes "now" in the visitor's own
+  browser at page-load (`useEffect`, never baked into the static HTML at
+  build time) — SPEC's "works with functions paused" requirement, satisfied
+  because there are no functions, and "client-side arithmetic" because a
+  statically exported page never changes after the day it was built. With
+  zero readings ever recorded, the banner correctly renders nothing (a
+  distinct, honest state from staleness — the launch-state copy owns it).
+
+  Footer (chip mark + "Built by James Lorenz Santos" + agentjames.vercel.app
+  + the GitHub repo link, explicitly no hire-me CTA — BRAND-KIT.md D1) lives
+  once in the root layout, so it is structurally on every page rather than
+  copy-pasted. Favicon + OG metadata reference the committed
+  `scripts/brand.mjs` output (`apps/web/public/brand/**`, regenerated via
+  the new root `pnpm brand` script — byte-identical, verified — and a new
+  CI `brand-drift` stage fails on any hand-edit drift, the same pattern
+  `calibration-drift` already uses for the README block).
+
+  Two real, load-bearing bugs found and fixed by testing, not inspection:
+  (1) Turbopack (Next 16's default build engine) has an open upstream bug
+  resolving `transpilePackages`' inherited/re-exported internal imports in
+  a monorepo (vercel/next.js#85315/#85316/#63230) — `tiltmeter`'s own
+  TS-NodeNext-style `.js`-suffixed specifiers pointing at sibling `.ts`
+  files (correct for `tsc`/Vitest) failed to resolve under Turbopack;
+  fixed via the documented `next build --webpack` workaround plus a
+  standard `resolve.extensionAlias` in `next.config.ts`. (2) Next.js 16's
+  App Router made `params` a `Promise` rather than a plain object; using it
+  synchronously (`params.id` instead of `const { id } = await params`)
+  does not throw a type error under the version originally scaffolded but
+  silently evaluates to `undefined`, meaning `notFound()` fired on EVERY
+  visit to `/suites/[id]` and `/readings/[runGroupId]` while the static
+  file server still returned HTTP 200 (Next's own not-found boundary is a
+  real, prebuilt HTML file) — invisible unless a test actually asserts on
+  page CONTENT rather than just HTTP status, which is exactly what
+  `e2e/every-page.spec.ts`'s "all four launch suites are reachable" test
+  caught. Fixed in both dynamic routes.
+
+  Static export's `output: "export"` requires at least one static param
+  per dynamic route segment (`generateStaticParams` cannot return `[]`) —
+  since `observatory/readings/` is genuinely empty, `/readings/[runGroupId]`
+  uses one honest, clearly-named placeholder param (`none-yet`) whose page
+  renders real "no run group has been recorded yet" content, never a
+  fabricated reading; the moment a real run group lands, `listRunGroupIds()`
+  returns it and the placeholder stops being generated at all.
+
+  Playwright e2e (`apps/web/e2e/**`, `pnpm e2e` from root) replaces the CI
+  `e2e:smoke` echo no-op with 14 real tests against the actual static
+  export (`next build --webpack` then `serve`, never `next dev`): `/`
+  renders correctly with `javaScriptEnabled: false` (proving the core
+  content is real server-rendered HTML, not client-JS-dependent); footer +
+  favicon + no-hire-me-CTA on every route shape (static, dynamic-suite,
+  dynamic-reading); the exact SPEC §11 launch-state copy; the `/models`
+  death-condition guard; the dead-man banner correctly absent with zero
+  readings. Two Vitest unit tests (`apps/web/lib/*.test.ts`, wired into the
+  root "unit" project) cover the dead-man boundary and the hard-break
+  series logic independent of React/Playwright.
+
+  Gate (docs/SPEC.md §14 M6): all five routes build under `output: "export"`
+  with `dynamic: "error"`; 14/14 e2e tests green; brand assets byte-identical
+  (zero drift); 304 unit tests green (30 files, +17 from apps/web),
+  zero regressions. All CI stages green: typecheck, lint, unit, e2e-smoke
+  (now real), brand-drift (new), eval, build, pack-check, calibration-drift.
+
 - M5 (the observatory — docs/SPEC.md §14/§11, DATA ONLY, zero code in
   `observatory/`, zero live API calls): four launch suites authored from
   REAL artifacts on this machine — `house-skill-activation` (10 real

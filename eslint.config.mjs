@@ -27,7 +27,15 @@ const NODE_BUILTINS = [
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/.next/**", "**/coverage/**", "**/node_modules/**"],
+    ignores: [
+      "**/dist/**",
+      "**/.next/**",
+      "**/out/**",
+      "**/coverage/**",
+      "**/node_modules/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
@@ -36,7 +44,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["*.mjs", "scripts/*.mjs"],
+          allowDefaultProject: ["*.mjs", "scripts/*.mjs", "apps/web/*.mjs"],
         },
         tsconfigRootDir: import.meta.dirname,
       },

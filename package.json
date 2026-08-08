@@ -15,7 +15,9 @@
     "eval": "vitest run --project eval",
     "calibration": "pnpm --filter tiltmeter build && node scripts/calibration-report.mjs",
     "calibration:check": "node scripts/calibration-report.mjs --check",
-    "ci:pack-check": "node scripts/pack-check.mjs"
+    "ci:pack-check": "node scripts/pack-check.mjs",
+    "brand": "node scripts/brand.mjs --project=tiltmeter --out=apps/web/public/brand",
+    "e2e": "pnpm --filter web build && pnpm --filter web e2e"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

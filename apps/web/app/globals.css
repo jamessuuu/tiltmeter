@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind 4 CSS-based config (no tailwind.config.js — SPEC: "Tailwind 4
+ * config in globals.css"). Palette from BRAND-KIT.md / agentjames'
+ * docs/DESIGN.md, binding across the whole showcase program: PAPER
+ * (background), INK (text/strokes), AMBER (the ONE signal color), RULE
+ * (hairlines). 0-2px radius, no gradients, no glow, no dark chrome.
+ */
+@theme {
+  --color-paper: #faf7f2;
+  --color-ink: #1a1712;
+  --color-amber: #b45309;
+  --color-rule: #e4ddd3;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* Chart lines and hard-break annotations (methodology/`/` instrument) share this hairline rule color. */
+.hairline {
+  border-color: var(--color-rule);
+}

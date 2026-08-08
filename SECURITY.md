@@ -91,7 +91,7 @@ runner's own authority.
 contents: write` and nothing else. No workflow reachable by a fork PR or
 external input ever sees `ANTHROPIC_API_KEY`.
 
-## No unauthenticated write path — because there is no write path — lands at M6
+## No unauthenticated write path — because there is no write path — applies from M6
 
 The site (`apps/web`) is 100% static, prerendered at build time from
 committed `observatory/` data, with `export const dynamic = 'error'` on
@@ -99,12 +99,15 @@ every route. There are zero API routes and zero database writes to gate —
 the acceptance bar is met structurally, not by an auth check that could be
 misconfigured.
 
-## WAF rate-limit rule — lands at M6
+## WAF rate-limit rule — lands at deploy time (no Vercel project exists yet)
 
-One Hobby-tier WAF rule bound to `/*`, documented here once it exists. The
-worst case of hostile traffic against a fully static site with no model
-spend path is a 30-day platform pause of a site whose every published claim
-still reproduces from the repo.
+`apps/web` is built and tested (M6) but not deployed anywhere on this
+machine — deploys are James-gated program-wide. One Hobby-tier WAF rule
+bound to `/*` will be documented here once a Vercel project exists and the
+rule is bound. The worst case of hostile traffic against a fully static
+site with no model spend path is a 30-day platform pause of a site whose
+every published claim still reproduces from the repo — true today even
+pre-deploy, since the site has zero request path to a model regardless.
 
 ## Reverse threat: suites vendor your artifact text — applies from M1
 

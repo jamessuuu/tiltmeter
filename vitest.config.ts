@@ -11,7 +11,15 @@ export default defineConfig({
       {
         test: {
           name: "unit",
-          include: ["packages/*/src/**/*.test.ts", "packages/*/test/**/*.test.ts"],
+          include: [
+            "packages/*/src/**/*.test.ts",
+            "packages/*/test/**/*.test.ts",
+            // apps/web's pure lib/ functions (SPEC §14 M6: "the dead-man
+            // banner unit-tested at the 10-day boundary") — component/page
+            // rendering itself is Playwright's job (apps/web/e2e/**), not
+            // Vitest's; this only covers logic isolated from React/Next.
+            "apps/web/lib/**/*.test.ts",
+          ],
         },
       },
       {

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .next/
+out/
 coverage/
 *.tsbuildinfo
 .env
@@ -8,3 +9,5 @@ coverage/
 !.env.example
 .vercel/
 .DS_Store
+playwright-report/
+test-results/
