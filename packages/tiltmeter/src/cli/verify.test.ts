@@ -113,13 +113,14 @@ describe("runVerify", () => {
     expect(out.some((line) => line.includes("nothing to verify"))).toBe(true);
   });
 
-  it("always prints the git pre-registration walk as not-yet-implemented, even on an empty corpus", () => {
+  it("M5: on an empty corpus, reports plainly that there is nothing to walk yet (not a stub message)", () => {
     const { io, out } = makeIo();
-    runVerify(dir, io);
-    expect(out.some((line) => line.includes("NOT IMPLEMENTED"))).toBe(true);
+    const result = runVerify(dir, io);
+    expect(out.some((line) => line.includes("no readings to check yet"))).toBe(true);
+    expect(result.preRegistration).toEqual([]);
   });
 
-  it("ok when every reading's body hash and the index chain both verify", async () => {
+  it("ok when every reading's body hash and the index chain both verify (independent of the pre-registration walk)", async () => {
     const { bodyHash, suiteId } = await writeValidReading("rg-1", "cell-a");
     const entry = appendEntry([], {
       runGroupId: "rg-1",
@@ -134,8 +135,14 @@ describe("runVerify", () => {
 
     const { io, out } = makeIo();
     const result = runVerify(dir, io);
-    expect(result.ok).toBe(true);
+    // This fixture's temp directory is not a git repo at all, so the
+    // pre-registration walk (a SEPARATE, additional check — SPEC §7) can
+    // never succeed here and `result.ok` (which folds it in) is correctly
+    // false; what THIS test asserts is the M2-era body-hash/chain check,
+    // unaffected by that.
+    expect(result.corpus.ok).toBe(true);
     expect(out.some((line) => line.includes("OK") && line.includes("body hash"))).toBe(true);
+    expect(result.preRegistration[0]?.ok).toBe(false);
   });
 
   it("not ok when a reading's committed bytes were tampered with after the fact", async () => {

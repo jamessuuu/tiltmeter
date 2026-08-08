@@ -2,18 +2,24 @@
  * Suite schema (SPEC §3.1) — the pre-registered artifact. Zod at every
  * boundary (SPEC §13): a suite file is validated on read, never trusted.
  *
- * Scope note (deviation, recorded in CHANGELOG): SPEC §3.2 lists five probe
- * types and eight scorer kinds across the whole v1 surface. M1 implements
- * exactly the three scorers its gate needs — `tool-called`, `no-tool-called`,
- * `tool-in-set` — so `ExpectSchema` is a discriminated union of those three
- * for now. The remaining scorer kinds (`arg-enum`, `arg-required-keys`,
- * `tool-order`, `literal-prefix`, `json-schema-valid`) are additive and land
- * with the real observatory suites at M4/M5; adding a union member here is a
+ * Scope note (M1): SPEC §3.2 lists five probe types and eight scorer kinds
+ * across the whole v1 surface. M1 implemented exactly the three scorers its
+ * walking-skeleton gate needed — `tool-called`, `no-tool-called`,
+ * `tool-in-set`. M5 (this file, now) adds the remaining five —
+ * `arg-enum`, `arg-required-keys`, `tool-order`, `literal-prefix`,
+ * `json-schema-valid` — for the real observatory suites (`mcp-tool-selection`,
+ * `routing-adherence`, `output-contract`). Adding a union member was always a
  * non-breaking schema change and does not retroactively invalidate anything
- * hashed under `suiteSpecHash` for suites that never reference them.
+ * hashed under `suiteSpecHash` for suites that never reference the new kinds.
+ * `json-schema-valid` carries its schema INLINE (`schema`, not a
+ * `schemaRef`) — SPEC §3.2 shows `json-schema-valid(schemaRef)`, implying an
+ * indirection into a separately-registered schema; inlining it keeps an
+ * item fully self-contained (its canonical bytes — and therefore its
+ * immutability check, SPEC §3.1 Decision 2 — never depend on a schema
+ * defined elsewhere in the file), a recorded, deliberate deviation.
  */
 import { z } from "zod";
-import { jcsCanonical } from "./canonical.js";
+import { jcsCanonical, JsonObjectSchema, type JsonObject } from "./canonical.js";
 import { sha256Hex } from "./sha256.js";
 
 /** SPEC §3.2 probe taxonomy. Declared in full even though M1 only scores `activation`-shaped items. */
@@ -84,6 +90,9 @@ export type Artifact = z.infer<typeof ArtifactSchema>;
 
 const ArgsSubsetSchema = z.record(z.string(), z.unknown());
 
+/** A minimal JSON-Schema-subset object — `type`/`required`/`properties`/`enum`/`items` only, enough for the `output-contract` suite's own Verdict/Finding shapes (SPEC §3.2 `json-schema-valid`'s "downstream contract"). No `$ref`, no `oneOf`/`anyOf`/`allOf`, no `format`, no `additionalProperties` enforcement — `core/scorers.ts`'s validator is permissive on anything outside this subset rather than a silent false negative. */
+const MinimalJsonSchemaSchema: z.ZodType<JsonObject> = JsonObjectSchema;
+
 export const ExpectSchema = z.discriminatedUnion("scorer", [
   z.object({
     scorer: z.literal("tool-called"),
@@ -96,6 +105,30 @@ export const ExpectSchema = z.discriminatedUnion("scorer", [
   z.object({
     scorer: z.literal("tool-in-set"),
     names: z.array(z.string().min(1)).min(1),
+  }),
+  z.object({
+    scorer: z.literal("arg-enum"),
+    name: z.string().min(1),
+    key: z.string().min(1),
+    values: z.array(z.union([z.string(), z.number(), z.boolean()])).min(1),
+  }),
+  z.object({
+    scorer: z.literal("arg-required-keys"),
+    name: z.string().min(1),
+    keys: z.array(z.string().min(1)).min(1),
+  }),
+  z.object({
+    scorer: z.literal("tool-order"),
+    names: z.array(z.string().min(1)).min(1),
+  }),
+  z.object({
+    scorer: z.literal("literal-prefix"),
+    prefix: z.string().min(1),
+  }),
+  z.object({
+    scorer: z.literal("json-schema-valid"),
+    name: z.string().min(1),
+    schema: MinimalJsonSchemaSchema,
   }),
 ]);
 export type Expect = z.infer<typeof ExpectSchema>;

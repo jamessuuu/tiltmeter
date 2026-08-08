@@ -7,7 +7,7 @@
 import type { Artifact, Item, Suite } from "../core/suite.js";
 import type { Presentation } from "../core/presentation.js";
 import type { FakeScript } from "./fake-model-client.js";
-import { noToolTrial, toolUseTrial, type TrialResult } from "./fake-model-client.js";
+import { multiToolTrial, noToolTrial, textTrial, toolUseTrial, type TrialResult } from "./fake-model-client.js";
 
 export const FIXTURE_PRESENTATION: Presentation = {
   formatVersion: 1,
@@ -90,7 +90,7 @@ export function buildFixtureSuite(options: BuildFixtureSuiteOptions): Suite {
   };
 }
 
-/** Build a fake trial for one item, correct (passes its `expect`) or incorrect (fails it), uniformly. */
+/** Build a fake trial for one item, correct (passes its `expect`) or incorrect (fails it), uniformly. Covers all eight SPEC §3.2 scorer kinds — used by `scriptForBehavior` for calibration/golden fixtures, which only ever build `tool-called`/`no-tool-called` items (M1-M3 scope), but this switch must stay exhaustive as `core/scorers.ts` grows. */
 function trialForItem(item: Item, correct: boolean): TrialResult {
   switch (item.expect.scorer) {
     case "tool-called":
@@ -101,6 +101,24 @@ function trialForItem(item: Item, correct: boolean): TrialResult {
       const [firstName] = item.expect.names;
       return correct && firstName !== undefined ? toolUseTrial(firstName, {}) : noToolTrial();
     }
+    case "arg-enum": {
+      const [firstValue] = item.expect.values;
+      return correct && firstValue !== undefined
+        ? toolUseTrial(item.expect.name, { [item.expect.key]: firstValue })
+        : noToolTrial();
+    }
+    case "arg-required-keys": {
+      const input = Object.fromEntries(item.expect.keys.map((k) => [k, "fixture-value"]));
+      return correct ? toolUseTrial(item.expect.name, input) : toolUseTrial(item.expect.name, {});
+    }
+    case "tool-order":
+      return correct
+        ? multiToolTrial(item.expect.names.map((name) => ({ name })))
+        : noToolTrial();
+    case "literal-prefix":
+      return correct ? textTrial(item.expect.prefix) : textTrial("unexpected preamble");
+    case "json-schema-valid":
+      return correct ? toolUseTrial(item.expect.name, {}) : noToolTrial();
   }
 }
 

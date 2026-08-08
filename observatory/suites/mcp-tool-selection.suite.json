@@ -1,0 +1,721 @@
+{
+  "artifacts": [
+    {
+      "id": "tool.resolve-library-id",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Resolves a package/product name to a Context7-compatible library ID and returns matching libraries. You MUST call this before 'query-docs' to obtain a valid library ID unless the user explicitly provides one in the format '/org/project'.",
+        "input_schema": {
+          "properties": {
+            "libraryName": {
+              "description": "Library name to search for, e.g. 'Next.js', 'Three.js'.",
+              "type": "string"
+            },
+            "query": {
+              "description": "What to look up in the library's documentation.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "query",
+            "libraryName"
+          ],
+          "type": "object"
+        },
+        "name": "resolve-library-id"
+      },
+      "source": {
+        "blobSha": "b63ff3657d35255adbc4a1154375f2d8f672a963",
+        "capturedAt": "2026-08-09",
+        "commit": "8d52608e4e27557e6c1e807c8241cffb5544a9a3",
+        "field": "server.registerTool('resolve-library-id', ...)",
+        "origin": "public",
+        "path": "packages/mcp/src/index.ts",
+        "repo": "upstash/context7"
+      }
+    },
+    {
+      "id": "tool.query-docs",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Retrieves and queries up-to-date documentation and code examples from Context7 for any programming library or framework. You must call 'resolve-library-id' first to obtain the exact library ID, UNLESS the user explicitly provides one.",
+        "input_schema": {
+          "properties": {
+            "libraryId": {
+              "description": "Exact Context7-compatible library ID (e.g. '/vercel/next.js').",
+              "type": "string"
+            },
+            "query": {
+              "description": "What to look up, scoped to a single concept.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "libraryId",
+            "query"
+          ],
+          "type": "object"
+        },
+        "name": "query-docs"
+      },
+      "source": {
+        "blobSha": "b63ff3657d35255adbc4a1154375f2d8f672a963",
+        "capturedAt": "2026-08-09",
+        "commit": "8d52608e4e27557e6c1e807c8241cffb5544a9a3",
+        "field": "server.registerTool('query-docs', ...)",
+        "origin": "public",
+        "path": "packages/mcp/src/index.ts",
+        "repo": "upstash/context7"
+      }
+    },
+    {
+      "id": "tool.search_issues",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Search issues. The search query, as natural language.",
+        "input_schema": {
+          "properties": {
+            "owner": {
+              "type": "string"
+            },
+            "query": {
+              "description": "The search query, as natural language.",
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "type": "object"
+        },
+        "name": "search_issues"
+      },
+      "source": {
+        "blobSha": "f3114fb9007ea1b920c7336d86fb4d715438ace0",
+        "capturedAt": "2026-08-09",
+        "commit": "e7f7bb8b31bd98c3a65167905126e136aa8d85eb",
+        "field": "Available Toolsets > search_issues",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "github/github-mcp-server"
+      }
+    },
+    {
+      "id": "tool.search_code",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Search code (GitHub code search REST). Implicit AND between terms; supports OR, NOT, and quoted phrases.",
+        "input_schema": {
+          "properties": {
+            "query": {
+              "description": "Search query (GitHub code search REST syntax).",
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "type": "object"
+        },
+        "name": "search_code"
+      },
+      "source": {
+        "blobSha": "f3114fb9007ea1b920c7336d86fb4d715438ace0",
+        "capturedAt": "2026-08-09",
+        "commit": "e7f7bb8b31bd98c3a65167905126e136aa8d85eb",
+        "field": "Available Toolsets > search_code",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "github/github-mcp-server"
+      }
+    },
+    {
+      "id": "tool.list_issues",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "List issues. No free-text search — structured filters only (owner/repo/state/labels).",
+        "input_schema": {
+          "properties": {
+            "owner": {
+              "description": "Repository owner",
+              "type": "string"
+            },
+            "repo": {
+              "description": "Repository name",
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "owner",
+            "repo"
+          ],
+          "type": "object"
+        },
+        "name": "list_issues"
+      },
+      "source": {
+        "blobSha": "f3114fb9007ea1b920c7336d86fb4d715438ace0",
+        "capturedAt": "2026-08-09",
+        "commit": "e7f7bb8b31bd98c3a65167905126e136aa8d85eb",
+        "field": "Available Toolsets > list_issues",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "github/github-mcp-server"
+      }
+    },
+    {
+      "id": "tool.browser_navigate",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Navigate to a URL",
+        "input_schema": {
+          "properties": {
+            "url": {
+              "description": "The URL to navigate to",
+              "type": "string"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "type": "object"
+        },
+        "name": "browser_navigate"
+      },
+      "source": {
+        "blobSha": "8fc97dfe0c378af3fbc01eeb2afe5a98f13302ce",
+        "capturedAt": "2026-08-09",
+        "commit": "4ed35bf8713337dfce02f073edd3bd0c7ebf310f",
+        "field": "Tools > Core automation > browser_navigate",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "microsoft/playwright-mcp"
+      }
+    },
+    {
+      "id": "tool.browser_snapshot",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Capture accessibility snapshot of the current page, this is better than screenshot",
+        "input_schema": {
+          "properties": {
+            "boxes": {
+              "type": "boolean"
+            },
+            "depth": {
+              "type": "number"
+            },
+            "filename": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "browser_snapshot"
+      },
+      "source": {
+        "blobSha": "8fc97dfe0c378af3fbc01eeb2afe5a98f13302ce",
+        "capturedAt": "2026-08-09",
+        "commit": "4ed35bf8713337dfce02f073edd3bd0c7ebf310f",
+        "field": "Tools > Core automation > browser_snapshot",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "microsoft/playwright-mcp"
+      }
+    },
+    {
+      "id": "tool.browser_take_screenshot",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.",
+        "input_schema": {
+          "properties": {
+            "element": {
+              "type": "string"
+            },
+            "fullPage": {
+              "type": "boolean"
+            },
+            "scale": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "browser_take_screenshot"
+      },
+      "source": {
+        "blobSha": "8fc97dfe0c378af3fbc01eeb2afe5a98f13302ce",
+        "capturedAt": "2026-08-09",
+        "commit": "4ed35bf8713337dfce02f073edd3bd0c7ebf310f",
+        "field": "Tools > Core automation > browser_take_screenshot",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "microsoft/playwright-mcp"
+      }
+    },
+    {
+      "id": "tool.browser_click",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Perform click on a web page",
+        "input_schema": {
+          "properties": {
+            "button": {
+              "type": "string"
+            },
+            "doubleClick": {
+              "type": "boolean"
+            },
+            "element": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "target"
+          ],
+          "type": "object"
+        },
+        "name": "browser_click"
+      },
+      "source": {
+        "blobSha": "8fc97dfe0c378af3fbc01eeb2afe5a98f13302ce",
+        "capturedAt": "2026-08-09",
+        "commit": "4ed35bf8713337dfce02f073edd3bd0c7ebf310f",
+        "field": "Tools > Core automation > browser_click",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "microsoft/playwright-mcp"
+      }
+    },
+    {
+      "id": "tool.browser_type",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Type text into editable element",
+        "input_schema": {
+          "properties": {
+            "element": {
+              "type": "string"
+            },
+            "slowly": {
+              "type": "boolean"
+            },
+            "submit": {
+              "type": "boolean"
+            },
+            "target": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "target",
+            "text"
+          ],
+          "type": "object"
+        },
+        "name": "browser_type"
+      },
+      "source": {
+        "blobSha": "8fc97dfe0c378af3fbc01eeb2afe5a98f13302ce",
+        "capturedAt": "2026-08-09",
+        "commit": "4ed35bf8713337dfce02f073edd3bd0c7ebf310f",
+        "field": "Tools > Core automation > browser_type",
+        "origin": "public",
+        "path": "README.md",
+        "repo": "microsoft/playwright-mcp"
+      }
+    }
+  ],
+  "docs": "SPEC §11 launch suite 2 — real tool schemas from three PUBLIC MCP servers actually configured on this machine (context7, github, playwright/agent-browser), vendored with attribution (repo+commit+blobSha, byte-verified by CI re-fetch). Includes genuinely confusable pairs: resolve-library-id vs query-docs (both take a free-text 'query'), search_issues vs search_code vs list_issues (search-vs-structured-list, issues-vs-code), browser_snapshot vs browser_take_screenshot (the upstream README explicitly warns about this exact confusion). 20 positive + 8 negative. Nothing from any private employer- or client-specific world appears here — every artifact is public and byte-verified against a commit.",
+  "formatVersion": 1,
+  "id": "mcp-tool-selection",
+  "items": [
+    {
+      "expect": {
+        "args": {
+          "libraryName": "Next.js"
+        },
+        "name": "resolve-library-id",
+        "scorer": "tool-called"
+      },
+      "id": "pos-resolve-library-id-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's the current way to define an API route in Next.js? I need to search Context7 to get the right library ID first."
+    },
+    {
+      "expect": {
+        "args": {
+          "libraryName": "Prisma"
+        },
+        "name": "resolve-library-id",
+        "scorer": "tool-called"
+      },
+      "id": "pos-resolve-library-id-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Look up how Prisma handles migrations — I don't have a Context7 library ID for it yet."
+    },
+    {
+      "expect": {
+        "args": {
+          "libraryId": "/vercel/next.js"
+        },
+        "name": "query-docs",
+        "scorer": "tool-called"
+      },
+      "id": "pos-query-docs-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Using the Context7 library ID /vercel/next.js, find out how server actions work."
+    },
+    {
+      "expect": {
+        "args": {
+          "libraryId": "/mongodb/docs"
+        },
+        "name": "query-docs",
+        "scorer": "tool-called"
+      },
+      "id": "pos-query-docs-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "The Context7 ID is /mongodb/docs — look up their aggregation pipeline syntax."
+    },
+    {
+      "expect": {
+        "keys": [
+          "query"
+        ],
+        "name": "search_issues",
+        "scorer": "arg-required-keys"
+      },
+      "id": "pos-search_issues-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Search this repo's GitHub issues for anything mentioning 'flaky test'."
+    },
+    {
+      "expect": {
+        "keys": [
+          "query"
+        ],
+        "name": "search_issues",
+        "scorer": "arg-required-keys"
+      },
+      "id": "pos-search_issues-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Find open issues in owner/repo about memory leaks."
+    },
+    {
+      "expect": {
+        "keys": [
+          "query"
+        ],
+        "name": "search_code",
+        "scorer": "arg-required-keys"
+      },
+      "id": "pos-search_code-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Search the codebase on GitHub for every place that calls `withContext` in Go."
+    },
+    {
+      "expect": {
+        "keys": [
+          "query"
+        ],
+        "name": "search_code",
+        "scorer": "arg-required-keys"
+      },
+      "id": "pos-search_code-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Find the function definition for `extractLibraryId` somewhere in this GitHub org's code."
+    },
+    {
+      "expect": {
+        "args": {
+          "owner": "jamessuuu",
+          "repo": "tiltmeter"
+        },
+        "name": "list_issues",
+        "scorer": "tool-called"
+      },
+      "id": "pos-list_issues-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "List every open issue in jamessuuu/tiltmeter — no search term, just the raw list."
+    },
+    {
+      "expect": {
+        "args": {
+          "owner": "jamessuuu",
+          "repo": "klik"
+        },
+        "name": "list_issues",
+        "scorer": "tool-called"
+      },
+      "id": "pos-list_issues-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Show me all issues (open and closed) for jamessuuu/klik, I don't need a search, just the full list."
+    },
+    {
+      "expect": {
+        "args": {
+          "url": "https://example.com"
+        },
+        "name": "browser_navigate",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_navigate-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Go to https://example.com in the browser."
+    },
+    {
+      "expect": {
+        "args": {
+          "url": "https://github.com/upstash/context7"
+        },
+        "name": "browser_navigate",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_navigate-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Open https://github.com/upstash/context7 in the browser tab."
+    },
+    {
+      "expect": {
+        "name": "browser_snapshot",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_snapshot-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "I need to click the submit button — first get me an accessibility snapshot of the page so I know what's clickable."
+    },
+    {
+      "expect": {
+        "name": "browser_snapshot",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_snapshot-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Before interacting with anything, capture the current page's accessibility tree."
+    },
+    {
+      "expect": {
+        "name": "browser_take_screenshot",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_take_screenshot-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Just take a picture of what the page looks like right now — I don't need to interact with it."
+    },
+    {
+      "expect": {
+        "args": {
+          "fullPage": true
+        },
+        "name": "browser_take_screenshot",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_take_screenshot-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Capture a full-page screenshot of the current state for the design review."
+    },
+    {
+      "expect": {
+        "args": {
+          "target": "ref_12"
+        },
+        "name": "browser_click",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_click-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Click the element with reference ref_12 on the page."
+    },
+    {
+      "expect": {
+        "args": {
+          "doubleClick": true,
+          "target": "ref_7"
+        },
+        "name": "browser_click",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_click-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Double-click on the icon at reference ref_7."
+    },
+    {
+      "expect": {
+        "args": {
+          "target": "ref_3",
+          "text": "hello world"
+        },
+        "name": "browser_type",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_type-1",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Type 'hello world' into the search box at reference ref_3."
+    },
+    {
+      "expect": {
+        "args": {
+          "submit": true,
+          "target": "ref_9",
+          "text": "test@example.com"
+        },
+        "name": "browser_type",
+        "scorer": "tool-called"
+      },
+      "id": "pos-browser_type-2",
+      "polarity": "positive",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Fill the email field (ref_9) with 'test@example.com' and press enter to submit."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-1",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's the weather like today?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-2",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Explain what a monorepo is."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-3",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "How many players are on a basketball team?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-4",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's your favorite color?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-5",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Summarize the plot of Romeo and Juliet."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-6",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "What does the acronym CPU stand for?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-7",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "Is 17 a prime number?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-8",
+      "polarity": "negative",
+      "probe": "tool-selection",
+      "registeredAt": "2026-08-09",
+      "scenario": "What year did the Berlin Wall fall?"
+    }
+  ],
+  "metrics": [
+    "overall",
+    "triggerRate",
+    "falsePositiveRate"
+  ],
+  "presentation": "tool-select@1",
+  "sampling": {
+    "k": 3,
+    "maxTokens": 512,
+    "temperature": 1
+  }
+}

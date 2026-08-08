@@ -8,15 +8,17 @@ artifact, pinned to a commit and probed with deterministic scorers; every
 published number is scoped to `(suite, harness commit, model)`, never to a
 model alone.
 
-> **Status: pre-release (M0–M4 landed).** The API in [docs/SPEC.md](docs/SPEC.md)
+> **Status: pre-release (M0–M5 landed).** The API in [docs/SPEC.md](docs/SPEC.md)
 > is designed and frozen for v1; implementation is landing milestone by
 > milestone. The runner, the attribution model, the calibrated classifier,
-> and the real Anthropic client (batch + sync + cost planning + caps) are
-> real and tested; the observatory's own suites and the site are not built
-> yet (M5–M8), and no real reading has ever been taken — every M4 test uses
-> a fake client or a mocked `fetch`, $0, zero network. Nothing below claims
-> to work until its milestone's tests say so — this README grows only as
-> fast as the receipts do.
+> the real Anthropic client (batch + sync + cost planning + caps), and the
+> observatory's own data (4 pre-registered launch suites, 108 items, the
+> panel, the pricing manifest, cited model release dates) are real and
+> tested. **No real reading has ever been taken and no API key has ever been
+> used** — the first run group spends James's money and is a deliberate,
+> James-gated step (see `observatory/readings/README.md`). The site is not
+> built yet (M6–M8). Nothing below claims to work until its milestone's
+> tests say so — this README grows only as fast as the receipts do.
 
 ## Why
 
@@ -66,9 +68,26 @@ acceptance criteria that keep them true.
 `observatory/` (James's own instance — suites, presentations, readings) is
 data and config only, zero code, so a fork replaces it and keeps everything
 else (docs/SPEC.md §2). `apps/web` (the static site rendering the time
-series) is **deferred past M0–M3** — deploys on this machine are James-gated
-program-wide, and there is nothing to deploy until the runner and the
-attribution model it is built on land first.
+series) is **deferred past M0–M5** — deploys on this machine are James-gated
+program-wide, and there is nothing to deploy until a real reading exists.
+
+## Launch suites (SPEC §11)
+
+Four suites, pre-registered from real artifacts on this machine, **108
+active items, 31.5% negative** — `tiltmeter lint` and the regression tests in
+`packages/tiltmeter/src/observatory.test.ts` keep this table honest:
+
+| Suite | Real artifacts | Items | Probe |
+|---|---|---|---|
+| `house-skill-activation` | 10 real `SKILL.md` descriptions from `~/.claude/skills` | 20 pos + 12 neg = 32 | `activation` |
+| `mcp-tool-selection` | Real, public tool schemas from context7, github-mcp-server, playwright-mcp (repo+commit+blobSha attributed) | 20 pos + 8 neg = 28 | `tool-selection` |
+| `routing-adherence` | The worlds router + routing-discipline blocks from `~/.claude/CLAUDE.md`/`ECOSYSTEM.md` | 16 pos + 6 neg = 22 | `instruction-adherence` |
+| `output-contract` | The ecosystem's own artifact vocabulary (Brief/Verdict/Handoff) + a `decline(reason_code)` channel | 18 pos + 8 neg = 26 | `output-format`, `refusal-shape` |
+
+**There is no time series yet — that is what pre-registration means. The
+series starts here.** Nothing from any other world appears in
+any suite (verified: `mcp-tool-selection`'s artifacts are 100% public;
+every other suite draws only from this machine's own `~/.claude`).
 
 ## Build order
 
@@ -81,7 +100,8 @@ attribution model it is built on land first.
 | M2 | Attribution: axis tuple, run groups, `cannot-attribute`, rebaseline, hash-chained index, `verify` | done |
 | M3 | Statistics: seeded paired bootstrap, MDE, per-metric verdicts, calibration sims | done |
 | M4 | Real client: Messages + Batch + `count_tokens`, pricing manifest, caps, `custom_id`/`--resume`, `tiltmeter plan`/`run` | done |
-| M5–M8 | The observatory's own suites, the site, scheduled workflows, npm publish | not started |
+| M5 | Observatory: 4 launch suites (108 items, real artifacts, cited provenance), `panel.json`, `models.json`, `tiltmeter lint`, the real `tiltmeter verify` git pre-registration walk | done |
+| M6–M8 | The site, scheduled workflows, npm publish | not started |
 
 ## Calibration
 

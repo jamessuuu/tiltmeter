@@ -69,6 +69,39 @@ export function toolUseTrial(
   };
 }
 
+/** SPEC §3.2 `instruction-adherence`'s `tool-order` scorer: multiple tool_use blocks in one response, in the given order. */
+export function multiToolTrial(
+  calls: readonly { name: string; input?: Record<string, unknown> }[],
+  overrides: Partial<Omit<ModelTrialResponse, "toolUseBlocks">> = {},
+): TrialResult {
+  const toolUseBlocks: ToolUseBlock[] = calls.map((c) => ({ type: "tool_use", name: c.name, input: c.input ?? {} }));
+  return {
+    outcome: "ok",
+    response: {
+      stopReason: "tool_use",
+      toolUseBlocks,
+      usage: DEFAULT_USAGE,
+      modelIdResolved: DEFAULT_MODEL_ID,
+      ...overrides,
+    },
+  };
+}
+
+/** SPEC §3.2 `instruction-adherence`'s `literal-prefix` scorer: a text-only response (no tool call), carrying `text`. */
+export function textTrial(text: string, overrides: Partial<Omit<ModelTrialResponse, "toolUseBlocks" | "text">> = {}): TrialResult {
+  return {
+    outcome: "ok",
+    response: {
+      stopReason: "end_turn",
+      toolUseBlocks: [],
+      text,
+      usage: DEFAULT_USAGE,
+      modelIdResolved: DEFAULT_MODEL_ID,
+      ...overrides,
+    },
+  };
+}
+
 export function noToolTrial(overrides: Partial<ModelTrialResponse> = {}): TrialResult {
   return {
     outcome: "ok",

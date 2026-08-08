@@ -1,0 +1,33 @@
+{
+  "formatVersion": 1,
+  "models": [
+    {
+      "modelId": "claude-haiku-4-5",
+      "displayName": "Claude Haiku 4.5",
+      "releasedAt": "2025-10-15",
+      "sourceUrl": "https://www.anthropic.com/news/claude-haiku-4-5",
+      "status": "standing"
+    },
+    {
+      "modelId": "claude-sonnet-5",
+      "displayName": "Claude Sonnet 5",
+      "releasedAt": "2026-06-30",
+      "sourceUrl": "https://www.anthropic.com/news/claude-sonnet-5",
+      "status": "standing"
+    },
+    {
+      "modelId": "claude-opus-5",
+      "displayName": "Claude Opus 5",
+      "releasedAt": "2026-07-24",
+      "sourceUrl": "https://www.anthropic.com/news/claude-opus-5",
+      "status": "release-only"
+    },
+    {
+      "modelId": "claude-fable-5",
+      "displayName": "Claude Fable 5",
+      "releasedAt": "2026-06-09",
+      "sourceUrl": "https://www.anthropic.com/news/claude-fable-5-mythos-5",
+      "status": "release-only"
+    }
+  ]
+}

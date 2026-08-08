@@ -1,13 +1,13 @@
 /**
  * `tiltmeter verify` (SPEC §7): "For each reading it (1) recomputes
  * `suiteSpecHash`… (2) walks git history… (3) reads `models.json`… (4)
- * asserts `suiteRegisteredAt < modelReleasedAt`." SPEC §14 M2's gate scopes
- * this milestone to the two pieces checkable from committed JSON alone —
- * body hashes and the index hash chain — and explicitly defers the git
- * pre-registration walk to M5 ("stub it with explicit not-yet-implemented
- * output, NEVER a false pass"). This module is pure (SPEC §6): no git, no
- * fs — `src/cli/verify.ts` reads `observatory/readings/**` off disk and
- * calls into this.
+ * asserts `suiteRegisteredAt < modelReleasedAt`." This module is pure
+ * (SPEC §6): no git, no fs. The git walk itself (finding WHICH commit
+ * first introduced a given `suiteSpecHash`) is necessarily I/O and lives
+ * in `src/node/git.ts`; this file owns only the DECISION — given a
+ * resolved commit date and a model's cited release date, is the
+ * pre-registration claim true — so that decision is unit-testable without
+ * ever shelling out to git.
  */
 import { canonicalStringify, jcsCanonical } from "./canonical.js";
 import { sha256Hex } from "./sha256.js";
@@ -51,27 +51,47 @@ export function verifyCorpus(readings: readonly Reading[], indexChain: readonly 
 }
 
 /**
- * SPEC §7's pre-registration proof — recompute `suiteSpecHash`, walk git
- * history for the first commit whose tree contains it, read the model's
- * cited `releasedAt`, and assert `suiteRegisteredAt < modelReleasedAt` — is
- * an M5 deliverable (it needs a real observatory + `models.json` + a git
- * walk, none of which exist yet). This function's return type has no `ok`
- * field at all — there is no value it could return that a caller could
- * mistake for a pass. Never call this expecting an answer; it exists so
- * `tiltmeter verify`'s output always names the gap instead of silently
- * omitting it.
+ * SPEC §7's pre-registration proof, the decision half: given a reading's
+ * identity, the git commit that first introduced its `suiteSpecHash` (and
+ * that commit's date — resolved by `src/node/git.ts`'s walk, NOT by this
+ * function), and the requested model's cited `releasedAt`, decide whether
+ * `suiteRegisteredAt < modelReleasedAt` (both plain `YYYY-MM-DD` or full
+ * ISO-8601 — lexicographic comparison is exact for either, as long as both
+ * inputs use the same precision). `ok: false` is a real, publishable
+ * outcome (SPEC §12's "the director's edge case" sibling: a suite that
+ * was NOT provably pre-registered before a given model existed), not an
+ * error — the caller decides what to do with a failed claim.
  */
-export interface GitPreRegistrationNotImplemented {
-  implemented: false;
-  reason: string;
+export interface PreRegistrationInput {
+  suiteId: string;
+  cellId: string;
+  runGroupId: string;
+  modelIdRequested: string;
+  suiteSpecHash: string;
+  /** The commit SHA that first introduced this exact `suiteSpecHash` (resolved by the git walk). `undefined` if no commit in history matches — the claim cannot be made at all. */
+  registeredAtCommit: string | undefined;
+  /** That commit's date (`YYYY-MM-DD` or full ISO-8601). `undefined` alongside `registeredAtCommit`. */
+  suiteRegisteredAt: string | undefined;
+  modelReleasedAt: string | undefined;
+  modelSourceUrl: string | undefined;
 }
 
-export function verifyGitPreRegistration(): GitPreRegistrationNotImplemented {
-  return {
-    implemented: false,
-    reason:
-      "the git pre-registration walk (SPEC §7: suiteSpecHash -> git history -> models.json releasedAt -> " +
-      "suiteRegisteredAt < modelReleasedAt) lands at M5 with the real observatory. Not yet implemented — " +
-      "this is a stub, never a pass.",
-  };
+export interface PreRegistrationResult extends PreRegistrationInput {
+  /** `true` only when every input above resolved AND `suiteRegisteredAt < modelReleasedAt`. */
+  ok: boolean;
+  /** Why `ok` is false — absent when `ok` is true. */
+  reason?: string;
+}
+
+export function evaluatePreRegistration(input: PreRegistrationInput): PreRegistrationResult {
+  if (input.registeredAtCommit === undefined || input.suiteRegisteredAt === undefined) {
+    return { ...input, ok: false, reason: "no commit in git history reproduces this suiteSpecHash" };
+  }
+  if (input.modelReleasedAt === undefined || input.modelSourceUrl === undefined) {
+    return { ...input, ok: false, reason: `models.json has no entry for "${input.modelIdRequested}"` };
+  }
+  if (!(input.suiteRegisteredAt < input.modelReleasedAt)) {
+    return { ...input, ok: false, reason: `suite registered ${input.suiteRegisteredAt} is not before model released ${input.modelReleasedAt}` };
+  }
+  return { ...input, ok: true };
 }

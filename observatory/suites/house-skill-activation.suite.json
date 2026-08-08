@@ -1,0 +1,630 @@
+{
+  "artifacts": [
+    {
+      "id": "skill.taste",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Anti-slop constitution for design, UI, copy, and naming. Load before designing any interface, writing public-facing text, naming anything, or making aesthetic choices — enforces decision-driven, non-generic output.",
+        "name": "taste"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/taste/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.retro",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Self-improvement engine for the agent ecosystem. Run after finishing a milestone, shipping something, or any session with real lessons — distills learnings into memory and the OWNING WORLD'S vault (Personal / Client / Employer; agentic-craft lessons to the General Vault - route per ~/.claude/WORLDS.md), and proposes concrete ecosystem upgrades.",
+        "name": "retro"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description (derived: world names generalized to neutral placeholders — Personal/Client/Employer — before commit, since the real names disclose a third party's (an employer's) internal structure; not verbatim)",
+        "origin": "private",
+        "path": ".claude/skills/retro/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.save",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Checkpoints the session's durable knowledge into all three memory layers — Claude's auto-memory, the project folder docs, and the OWNING WORLD'S vault (Personal / Client / Employer / General; route per ~/.claude/WORLDS.md) — and performs vault maintenance. Use on request (/save), before ending a significant session, or after decisions worth keeping.",
+        "name": "save"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description (derived: world names generalized to neutral placeholders — Personal/Client/Employer — before commit, since the real names disclose a third party's (an employer's) internal structure; not verbatim)",
+        "origin": "private",
+        "path": ".claude/skills/save/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.scout",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Runs the SCOUT idea pipeline — multi-agent opportunity scan (four hunting angles, strategist scoring) producing a ranked shortlist saved to the vault. Use on request (/scout, optionally with a focus like \"/scout chrome extensions\"), or on schedule. Research and rank only; James picks what gets built.",
+        "name": "scout"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/scout/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.pulse",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Runs the PULSE recency radar — three scanner agents sweep the last ~2 weeks of AI/agentic, dev-ecosystem, and market signals, prioritized into a digest with concrete so-what actions, saved to the vault. Use on request (/pulse) or on schedule to keep the ecosystem current.",
+        "name": "pulse"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/pulse/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.hub",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "One-command orientation across the whole ecosystem — active bets, open gates, task state, recent pipeline output, and pending decisions. Use at session start, after time away, or whenever the question is \"where were we and what needs me\".",
+        "name": "hub"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/hub/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.inbox",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Works the personal-project task queue — GitHub issues labeled claude-task on allowlisted personal repos, filed from any device. Lists the queue, picks up tasks, works them into PRs, and hands finished work back with needs-james for review. Use via /inbox, \"/inbox work <issue>\", or \"check my inbox\".",
+        "name": "inbox"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/inbox/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.launch",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Distribution playbook for shipping a project publicly. Use when a project is ready to launch or needs a launch plan — pre-flight checks, channel sequence, launch assets, and post-launch loop, tuned to 2026 evidence.",
+        "name": "launch"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/launch/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.new-project",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Bootstrap a new project the ecosystem way. Use when starting any new project or repo — runs the strategy gate, then scaffolds the standard structure, CLAUDE.md, stack defaults, and the linked Obsidian vault note.",
+        "name": "new-project"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/new-project/SKILL.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "skill.new-guild",
+      "kind": "skill-description",
+      "materialized": {
+        "description": "Forges a new field ecosystem (guild) for any tech or business field — research pass, director agent, specialist bench, curated skill library — following the construction standard. Use when entering a new field (\"build the game guild\", \"I need a legal-ops guild\") or when the Field Map queues the next wave.",
+        "name": "new-guild"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "frontmatter.description",
+        "origin": "private",
+        "path": ".claude/skills/new-guild/SKILL.md",
+        "repo": null
+      }
+    }
+  ],
+  "docs": "SPEC §11 launch suite 1 — the port of guilds/evals/trigger. Real SKILL.md frontmatter descriptions (10 skills currently registered in ~/.claude/skills) rendered through skill-tool@1's Skill-tool-enum presentation, exactly mirroring Claude Code's own skill-invocation shape. 20 positive (2 per skill, each a real scenario the skill's own description says it covers) + 12 negative (off-topic, no skill should fire). This suite answers: does each skill description still discriminate correctly as models change.",
+  "formatVersion": 1,
+  "id": "house-skill-activation",
+  "items": [
+    {
+      "artifactRefs": [
+        "skill.taste"
+      ],
+      "expect": {
+        "args": {
+          "skill": "taste"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-taste-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "I'm about to design the landing page hero for a new product — help me pick a visual direction."
+    },
+    {
+      "artifactRefs": [
+        "skill.taste"
+      ],
+      "expect": {
+        "args": {
+          "skill": "taste"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-taste-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "We need a name for this new internal tool before I start building it."
+    },
+    {
+      "artifactRefs": [
+        "skill.retro"
+      ],
+      "expect": {
+        "args": {
+          "skill": "retro"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-retro-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "We just shipped the M3 milestone — let's capture what we learned before moving on."
+    },
+    {
+      "artifactRefs": [
+        "skill.retro"
+      ],
+      "expect": {
+        "args": {
+          "skill": "retro"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-retro-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "That bug hunt just wrapped up after two hours of chasing a flaky test. Let's debrief."
+    },
+    {
+      "artifactRefs": [
+        "skill.save"
+      ],
+      "expect": {
+        "args": {
+          "skill": "save"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-save-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Before I close this session, let's make sure everything we decided today is written down somewhere I'll find it later."
+    },
+    {
+      "artifactRefs": [
+        "skill.save"
+      ],
+      "expect": {
+        "args": {
+          "skill": "save"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-save-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "We just locked in the pricing model for the new tier — I want that captured before I forget the reasoning."
+    },
+    {
+      "artifactRefs": [
+        "skill.scout"
+      ],
+      "expect": {
+        "args": {
+          "skill": "scout"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-scout-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Run a scan for new project ideas focused on developer tools."
+    },
+    {
+      "artifactRefs": [
+        "skill.scout"
+      ],
+      "expect": {
+        "args": {
+          "skill": "scout"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-scout-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "I have a free weekend coming up — what should I consider building?"
+    },
+    {
+      "artifactRefs": [
+        "skill.pulse"
+      ],
+      "expect": {
+        "args": {
+          "skill": "pulse"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-pulse-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's new in the agentic engineering space this week that I should know about?"
+    },
+    {
+      "artifactRefs": [
+        "skill.pulse"
+      ],
+      "expect": {
+        "args": {
+          "skill": "pulse"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-pulse-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Give me a digest of anything from the last two weeks that might affect our roadmap."
+    },
+    {
+      "artifactRefs": [
+        "skill.hub"
+      ],
+      "expect": {
+        "args": {
+          "skill": "hub"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-hub-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "I haven't touched this machine in five days — catch me up on where everything stands."
+    },
+    {
+      "artifactRefs": [
+        "skill.hub"
+      ],
+      "expect": {
+        "args": {
+          "skill": "hub"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-hub-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Give me the one-screen view: what's active, what's blocked, what needs me."
+    },
+    {
+      "artifactRefs": [
+        "skill.inbox"
+      ],
+      "expect": {
+        "args": {
+          "skill": "inbox"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-inbox-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Check if I've filed any new claude-task issues from my phone."
+    },
+    {
+      "artifactRefs": [
+        "skill.inbox"
+      ],
+      "expect": {
+        "args": {
+          "skill": "inbox"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-inbox-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Work through whatever's sitting in the task queue right now."
+    },
+    {
+      "artifactRefs": [
+        "skill.launch"
+      ],
+      "expect": {
+        "args": {
+          "skill": "launch"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-launch-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "This project is basically done — walk me through getting it in front of people."
+    },
+    {
+      "artifactRefs": [
+        "skill.launch"
+      ],
+      "expect": {
+        "args": {
+          "skill": "launch"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-launch-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "We're a week out from going public with this. What does the pre-flight checklist look like?"
+    },
+    {
+      "artifactRefs": [
+        "skill.new-project"
+      ],
+      "expect": {
+        "args": {
+          "skill": "new-project"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-new-project-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "I want to start a brand-new repo for a side project idea I had."
+    },
+    {
+      "artifactRefs": [
+        "skill.new-project"
+      ],
+      "expect": {
+        "args": {
+          "skill": "new-project"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-new-project-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Set up the standard scaffold for a new tool I'm building this weekend."
+    },
+    {
+      "artifactRefs": [
+        "skill.new-guild"
+      ],
+      "expect": {
+        "args": {
+          "skill": "new-guild"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-new-guild-1",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "I need a whole specialist bench for game development — build that guild."
+    },
+    {
+      "artifactRefs": [
+        "skill.new-guild"
+      ],
+      "expect": {
+        "args": {
+          "skill": "new-guild"
+        },
+        "name": "Skill",
+        "scorer": "tool-called"
+      },
+      "id": "pos-new-guild-2",
+      "polarity": "positive",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "We're moving into legal-ops work — stand up the ecosystem for it."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-1",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's the boiling point of water at sea level?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-2",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Fix the typo in the README on line 12."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-3",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Convert this CSV file to JSON for me."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-4",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "What time zone is Tokyo in?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-5",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Explain the difference between TCP and UDP."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-6",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Can you proofread this one sentence for grammar?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-7",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's 15% of 240?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-8",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Rename this variable from `x` to `count` throughout the file."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-9",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "How do I center a div in CSS?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-10",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's the capital of Australia?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-11",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Add a trailing newline to this file."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-12",
+      "polarity": "negative",
+      "probe": "activation",
+      "registeredAt": "2026-08-09",
+      "scenario": "Translate 'good morning' into French."
+    }
+  ],
+  "metrics": [
+    "overall",
+    "triggerRate",
+    "falsePositiveRate"
+  ],
+  "presentation": "skill-tool@1",
+  "sampling": {
+    "k": 3,
+    "maxTokens": 512,
+    "temperature": 1
+  }
+}

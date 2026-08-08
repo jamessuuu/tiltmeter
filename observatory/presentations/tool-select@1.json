@@ -1,0 +1,10 @@
+{
+  "formatVersion": 1,
+  "id": "tool-select@1",
+  "skillToolDescriptionHeader": "unused — this presentation carries no skill-description artifacts, only verbatim tool-schema artifacts.",
+  "skillToolName": "Skill",
+  "system": "You are an agent with access to the tools below. Call the single tool that best matches the user's request, with correctly-populated arguments. If none of the available tools apply, answer normally without calling any tool.",
+  "toolChoice": {
+    "type": "auto"
+  }
+}

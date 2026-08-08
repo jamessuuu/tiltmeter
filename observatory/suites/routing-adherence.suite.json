@@ -1,0 +1,371 @@
+{
+  "artifacts": [
+    {
+      "id": "tool.route",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Route the current request to exactly one of James's three worlds.",
+        "input_schema": {
+          "properties": {
+            "world": {
+              "enum": [
+                "personal",
+                "client",
+                "employer"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "world"
+          ],
+          "type": "object"
+        },
+        "name": "route"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "Worlds router section (encoded as tool schema; derived and abstracted — world names, filesystem roots, and employer-identifying specifics generalized to neutral placeholders before commit, since the real policy names a third party's (an employer's) internal workflow structure, which must never be published; not verbatim)",
+        "origin": "private",
+        "path": "CLAUDE.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "tool.split_task",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "Declare that a request spans more than one world and must become one session per world, rather than being routed as a single world.",
+        "input_schema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "split_task"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "\"A request spanning worlds is split into one session per world.\"",
+        "origin": "private",
+        "path": "CLAUDE.md",
+        "repo": null
+      }
+    },
+    {
+      "id": "tool.select_pattern",
+      "kind": "tool-schema",
+      "materialized": {
+        "description": "After routing to a world, pick the orchestration pattern for the task (ECOSYSTEM.md section 4's routing table).",
+        "input_schema": {
+          "properties": {
+            "pattern": {
+              "enum": [
+                "solo",
+                "specialist",
+                "parallel-fan-out",
+                "board",
+                "loop",
+                "pipeline",
+                "human-gate"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "pattern"
+          ],
+          "type": "object"
+        },
+        "name": "select_pattern"
+      },
+      "source": {
+        "capturedAt": "2026-08-09",
+        "field": "section 4: Routing (orchestration pattern table)",
+        "origin": "private",
+        "path": "ECOSYSTEM.md",
+        "repo": null
+      }
+    }
+  ],
+  "docs": "SPEC §11 launch suite 3 — the worlds router + routing-discipline blocks from ~/.claude/CLAUDE.md and ECOSYSTEM.md section 4, presented with route(world)/split_task()/select_pattern(pattern) tools. This is a derived-and-abstracted encoding of a private routing policy, not verbatim private text: the real policy names a real employer's internal workflow structure (a disclosure about a third party, not James alone), so world names, filesystem roots, and any employer/client product references have been generalized to neutral placeholders (PERSONAL/CLIENT/EMPLOYER; /personal, /client, /employer) before this suite was ever committed. Tests whether the routing policy still steers a real decision: single-world (route), cross-world (split_task, per the explicit 'one session per world' rule), a two-step world-then-pattern sequence (tool-order, mirroring ECOSYSTEM.md's LEVEL 0/LEVEL 1 chain of command), and a genuinely ambiguous case (literal-prefix 'AMBIGUOUS:' rather than a guessed route). 16 positive + 6 negative.",
+  "formatVersion": 1,
+  "id": "routing-adherence",
+  "items": [
+    {
+      "expect": {
+        "args": {
+          "world": "personal"
+        },
+        "name": "route",
+        "scorer": "tool-called"
+      },
+      "id": "pos-route-personal-1",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Update the swipe animation in the klik app."
+    },
+    {
+      "expect": {
+        "args": {
+          "world": "personal"
+        },
+        "name": "route",
+        "scorer": "tool-called"
+      },
+      "id": "pos-route-personal-2",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Push the latest brand assets for tiltmeter."
+    },
+    {
+      "expect": {
+        "args": {
+          "world": "client"
+        },
+        "name": "route",
+        "scorer": "tool-called"
+      },
+      "id": "pos-route-client-1",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Draft this week's status update for a client engagement."
+    },
+    {
+      "expect": {
+        "args": {
+          "world": "client"
+        },
+        "name": "route",
+        "scorer": "tool-called"
+      },
+      "id": "pos-route-client-2",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Check the client engagements folder for the latest SOW draft."
+    },
+    {
+      "expect": {
+        "args": {
+          "world": "employer"
+        },
+        "name": "route",
+        "scorer": "tool-called"
+      },
+      "id": "pos-route-employer-1",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Triage the issue queue for an employer-side client site."
+    },
+    {
+      "expect": {
+        "args": {
+          "world": "employer"
+        },
+        "name": "route",
+        "scorer": "tool-called"
+      },
+      "id": "pos-route-employer-2",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Deploy the latest build for an employer-side client's site."
+    },
+    {
+      "expect": {
+        "names": [
+          "route",
+          "select_pattern"
+        ],
+        "scorer": "tool-order"
+      },
+      "id": "pos-pattern-board",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "The visual direction for the new landing page is contested — get a proper design review going before we commit."
+    },
+    {
+      "expect": {
+        "names": [
+          "route",
+          "select_pattern"
+        ],
+        "scorer": "tool-order"
+      },
+      "id": "pos-pattern-parallel",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Research three competing swipe-hiring apps in parallel and compare them."
+    },
+    {
+      "expect": {
+        "names": [
+          "route",
+          "select_pattern"
+        ],
+        "scorer": "tool-order"
+      },
+      "id": "pos-pattern-loop",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Sweep the whole client vault for any decayed or duplicate notes — we don't know how many there are."
+    },
+    {
+      "expect": {
+        "names": [
+          "route",
+          "select_pattern"
+        ],
+        "scorer": "tool-order"
+      },
+      "id": "pos-pattern-pipeline",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Take the new employer-side client from spec through build through review through deploy."
+    },
+    {
+      "expect": {
+        "name": "split_task",
+        "scorer": "tool-called"
+      },
+      "id": "pos-split-1",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Update both the klik roadmap and a client's SOW in the same session."
+    },
+    {
+      "expect": {
+        "name": "split_task",
+        "scorer": "tool-called"
+      },
+      "id": "pos-split-2",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "I need changes made to both an employer-side client site and my personal agentjames portfolio right now."
+    },
+    {
+      "expect": {
+        "name": "split_task",
+        "scorer": "tool-called"
+      },
+      "id": "pos-split-3",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Handle the client invoice AND also triage today's personal task queue."
+    },
+    {
+      "expect": {
+        "prefix": "AMBIGUOUS:",
+        "scorer": "literal-prefix"
+      },
+      "id": "pos-ambiguous-1",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Someone mentioned a 'game guild' idea in passing — not sure if that's an active project or just a scan result. Handle it."
+    },
+    {
+      "expect": {
+        "prefix": "AMBIGUOUS:",
+        "scorer": "literal-prefix"
+      },
+      "id": "pos-ambiguous-2",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "There's a task that touches 'ecosystem stuff' but I can't tell if it's employer-adjacent or purely personal tooling."
+    },
+    {
+      "expect": {
+        "prefix": "AMBIGUOUS:",
+        "scorer": "literal-prefix"
+      },
+      "id": "pos-ambiguous-3",
+      "polarity": "positive",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Work on 'the client thing' — not sure if that's a freelance engagement or an employer-side matter."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-1",
+      "polarity": "negative",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's the difference between TCP and UDP?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-2",
+      "polarity": "negative",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "How many continents are there?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-3",
+      "polarity": "negative",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Explain what recursion means in programming, generally."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-4",
+      "polarity": "negative",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "What's 12 times 8?"
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-5",
+      "polarity": "negative",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "Define the term 'idempotent'."
+    },
+    {
+      "expect": {
+        "scorer": "no-tool-called"
+      },
+      "id": "neg-6",
+      "polarity": "negative",
+      "probe": "instruction-adherence",
+      "registeredAt": "2026-08-09",
+      "scenario": "What language is spoken in Brazil?"
+    }
+  ],
+  "metrics": [
+    "overall",
+    "triggerRate",
+    "falsePositiveRate"
+  ],
+  "presentation": "routing-policy@1",
+  "sampling": {
+    "k": 3,
+    "maxTokens": 512,
+    "temperature": 1
+  }
+}

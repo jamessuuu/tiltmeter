@@ -1,19 +1,23 @@
 /**
- * `tiltmeter verify` (SPEC §7, §14 M2): reads `observatory/readings/**` off
- * disk, checks every reading's body hash and the `readings/index.json` hash
- * chain (`core/verify.ts` / `core/index-chain.ts`), and always prints the
- * git pre-registration walk as not-yet-implemented (SPEC §7's proof; lands
- * at M5 with the real observatory) — never a silent omission, never a false
- * pass. This is the one file in `src/cli` allowed to touch `node:fs`
- * directly (SPEC §6: node builtins live in `src/node/**` and `src/cli/**`
- * only) — a dedicated `src/node` config-loader layer is M4/M5 scope; this
- * command's disk-reading needs are small enough not to wait for it.
+ * `tiltmeter verify` (SPEC §7, §14 M2/M5): reads `observatory/readings/**`
+ * off disk, checks every reading's body hash and the `readings/index.json`
+ * hash chain (`core/verify.ts` / `core/index-chain.ts`), and — M5, replacing
+ * the M2 stub — walks git history per reading to complete SPEC §7's
+ * pre-registration proof: recompute `suiteSpecHash`, find the first commit
+ * that produced it, read `models.json`'s cited `releasedAt` for the
+ * requested model, and assert `suiteRegisteredAt < modelReleasedAt`,
+ * printing the commit SHA and both dates. On an empty corpus (true today —
+ * M5 ships zero readings, see `observatory/readings/README.md`) there is
+ * nothing to walk, and that is reported plainly rather than faked.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseIndex, type IndexEntry } from "../core/index-chain.js";
 import { parseReading, type Reading } from "../core/reading.js";
-import { verifyCorpus, verifyGitPreRegistration, type CorpusVerifyResult } from "../core/verify.js";
+import { parseSuite, suiteSpecHash } from "../core/suite.js";
+import { findModelEntry, parseModels, type Models } from "../core/models.js";
+import { evaluatePreRegistration, verifyCorpus, type CorpusVerifyResult, type PreRegistrationResult } from "../core/verify.js";
+import { findFirstCommitWithHash } from "../node/git.js";
 import type { CliIo } from "./run.js";
 
 export interface ReadCorpusResult {
@@ -22,7 +26,7 @@ export interface ReadCorpusResult {
   errors: string[];
 }
 
-/** SPEC §2 layout: `readings/index.json` + `readings/<runGroupId>/<suiteId>__<cellId>.json` (and a `run.json` per run group, skipped here — it is submission bookkeeping, not a reading). */
+/** SPEC §2 layout: `readings/index.json` + `readings/<runGroupId>/<suiteId>__<cellId>.json` (and a `run.json`/`plan.json` per run group, skipped here — submission bookkeeping, not a reading). */
 export function readReadingsCorpus(observatoryDir: string): ReadCorpusResult {
   const readingsDir = join(observatoryDir, "readings");
   const errors: string[] = [];
@@ -45,7 +49,7 @@ export function readReadingsCorpus(observatoryDir: string): ReadCorpusResult {
     if (!entry.isDirectory()) continue;
     const runGroupDir = join(readingsDir, entry.name);
     for (const file of readdirSync(runGroupDir)) {
-      if (!file.endsWith(".json") || file === "run.json") continue;
+      if (!file.endsWith(".json") || file === "run.json" || file === "plan.json") continue;
       const relPath = `readings/${entry.name}/${file}`;
       try {
         readings.push(parseReading(JSON.parse(readFileSync(join(runGroupDir, file), "utf8"))));
@@ -58,11 +62,44 @@ export function readReadingsCorpus(observatoryDir: string): ReadCorpusResult {
   return { readings, indexChain, errors };
 }
 
+/**
+ * SPEC §7's git walk for ONE reading — resolves its suite file's path
+ * relative to `repoRoot` (git paths are repo-root-relative) and asks
+ * `src/node/git.ts` when its exact `suiteSpecHash` first landed.
+ * `observatoryRelPrefix` is the `observatory/` directory's path AS SEEN
+ * FROM `repoRoot` (normally `"observatory/"`; a test fixture whose git
+ * repo root is not the CLI's `cwd` passes something else).
+ */
+function resolvePreRegistration(
+  repoRoot: string,
+  observatoryRelPrefix: string,
+  reading: Reading,
+  models: Models | undefined,
+): PreRegistrationResult {
+  const suiteRelPath = `${observatoryRelPrefix}suites/${reading.suiteId}.suite.json`;
+  const found = findFirstCommitWithHash(repoRoot, suiteRelPath, reading.axes.suiteSpecHash, (content) =>
+    suiteSpecHash(parseSuite(JSON.parse(content))),
+  );
+  const modelEntry = models === undefined ? undefined : findModelEntry(models, reading.axes.modelIdRequested);
+  return evaluatePreRegistration({
+    suiteId: reading.suiteId,
+    cellId: reading.cellId,
+    runGroupId: reading.runGroupId,
+    modelIdRequested: reading.axes.modelIdRequested,
+    suiteSpecHash: reading.axes.suiteSpecHash,
+    registeredAtCommit: found?.commit,
+    suiteRegisteredAt: found?.date,
+    modelReleasedAt: modelEntry?.releasedAt,
+    modelSourceUrl: modelEntry?.sourceUrl,
+  });
+}
+
 export interface VerifyOutcome {
   ok: boolean;
   emptyCorpus: boolean;
   corpus: CorpusVerifyResult;
   parseErrors: string[];
+  preRegistration: PreRegistrationResult[];
 }
 
 export function runVerify(cwd: string, io: CliIo): VerifyOutcome {
@@ -74,7 +111,7 @@ export function runVerify(cwd: string, io: CliIo): VerifyOutcome {
   if (emptyCorpus && errors.length === 0) {
     io.stdout(
       "tiltmeter verify: no readings corpus found at observatory/readings/ — nothing to verify yet " +
-        "(the observatory's first real run group lands at SPEC §14 M5).",
+        "(the observatory's first real run group is James-gated; see observatory/readings/README.md).",
     );
   } else {
     const entryWord = indexChain.length === 1 ? "entry" : "entries";
@@ -89,8 +126,45 @@ export function runVerify(cwd: string, io: CliIo): VerifyOutcome {
     for (const e of errors) io.stderr(`  FAIL parse — ${e}`);
   }
 
-  const gitWalk = verifyGitPreRegistration();
-  io.stdout(`tiltmeter verify: git pre-registration walk — NOT IMPLEMENTED (${gitWalk.reason})`);
+  let models: Models | undefined;
+  const modelsPath = join(observatoryDir, "models.json");
+  if (existsSync(modelsPath)) {
+    try {
+      models = parseModels(JSON.parse(readFileSync(modelsPath, "utf8")));
+    } catch (error) {
+      io.stderr(`  FAIL parse — observatory/models.json: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
-  return { ok: corpus.ok && errors.length === 0, emptyCorpus, corpus, parseErrors: errors };
+  const preRegistration: PreRegistrationResult[] = [];
+  if (readings.length === 0) {
+    io.stdout(
+      "tiltmeter verify: git pre-registration walk — no readings to check yet " +
+        "(SPEC §7's proof runs per reading; there is nothing to prove until a reading exists).",
+    );
+  } else {
+    io.stdout("tiltmeter verify: git pre-registration walk —");
+    for (const reading of readings) {
+      const result = resolvePreRegistration(cwd, "observatory/", reading, models);
+      preRegistration.push(result);
+      const label = `${result.runGroupId}/${result.suiteId}__${result.cellId} (${result.modelIdRequested})`;
+      if (result.ok) {
+        io.stdout(
+          `  OK   ${label} — registered ${result.suiteRegisteredAt ?? "?"} (commit ${(result.registeredAtCommit ?? "").slice(0, 12)}) ` +
+            `< released ${result.modelReleasedAt ?? "?"}`,
+        );
+      } else {
+        io.stderr(`  FAIL ${label} — ${result.reason ?? "pre-registration could not be established"}`);
+      }
+    }
+  }
+
+  const preRegOk = preRegistration.every((r) => r.ok);
+  return {
+    ok: corpus.ok && errors.length === 0 && preRegOk,
+    emptyCorpus,
+    corpus,
+    parseErrors: errors,
+    preRegistration,
+  };
 }

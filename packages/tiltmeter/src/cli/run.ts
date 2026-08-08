@@ -5,12 +5,12 @@
  * `src/cli/index.ts` (the bin), which just forwards real argv/streams/env
  * here (mirrors snapgauge's `runCli` shape).
  *
- * M0/M1: the program shell + version/help only. M2 added `verify`. M4 adds
+ * M0/M1: the program shell + version/help only. M2 added `verify`. M4 added
  * `plan` and `run` — both accept an optional `deps.buildClient` (defaults
- * to the real `AnthropicModelClient`) so `run.test.ts`/`plan.test.ts`/
- * `run-command.test.ts` can inject a `FakeModelClient` and stay at $0 with
- * zero network (SPEC §9/§12: "NO live smoke run", "NO network in tests").
- * `init`, `lint`, `compare`, `report` remain M5/M8 territory.
+ * to the real `AnthropicModelClient`) so tests inject a `FakeModelClient`
+ * and stay at $0 with zero network (SPEC §9/§12: "NO live smoke run", "NO
+ * network in tests"). M5 adds `lint`. `init`, `compare`, `report` remain
+ * M8 territory.
  */
 import { Command } from "commander";
 import { TILTMETER_VERSION } from "../core/version.js";
@@ -19,6 +19,7 @@ import { AnthropicModelClient } from "../client/anthropic.js";
 import { runVerify } from "./verify.js";
 import { runPlanCommand, type PlanCommandOptions } from "./commands/plan.js";
 import { runRunCommand, type RunCommandOptions } from "./commands/run.js";
+import { runLintCommand, type LintCommandOptions } from "./commands/lint.js";
 import { CLI_EXIT } from "./exit-codes.js";
 
 export { CLI_EXIT } from "./exit-codes.js";
@@ -79,12 +80,24 @@ function buildProgram(io: CliIo, env: CliEnv, deps: Required<CliDeps>): Command 
   program
     .command("verify")
     .description(
-      "Verify committed reading body hashes and the readings/index.json hash chain (SPEC §7). " +
-        "Reports the git pre-registration walk as not-yet-implemented — it lands at M5, never a false pass.",
+      "Verify committed reading body hashes, the readings/index.json hash chain, and the git " +
+        "pre-registration proof per reading (SPEC §7). Reports 'nothing to check yet' honestly on an empty corpus.",
     )
     .action(() => {
       const result = runVerify(env.cwd, io);
       if (!result.ok) throw new CliExitError(CLI_EXIT.VERIFY_FAILED);
+    });
+
+  program
+    .command("lint")
+    .argument("[suiteId]", "lint only this suite (default: every suite under observatory/suites/)")
+    .description(
+      "Schema, the negatives quota, item immutability vs git, provenance level present, maxTokens headroom (SPEC §7).",
+    )
+    .action((suiteId: string | undefined) => {
+      const options: LintCommandOptions = { suiteId };
+      const code = runLintCommand(io, options, { cwd: env.cwd });
+      if (code !== CLI_EXIT.CLEAN) throw new CliExitError(code);
     });
 
   program

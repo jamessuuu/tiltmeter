@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { verifyCorpus, verifyGitPreRegistration, verifyReadingBodyHash } from "./verify.js";
+import { evaluatePreRegistration, verifyCorpus, verifyReadingBodyHash, type PreRegistrationInput } from "./verify.js";
 import { appendEntry } from "./index-chain.js";
 import { sha256Hex } from "./sha256.js";
 import { jcsCanonical } from "./canonical.js";
@@ -106,11 +106,55 @@ describe("verifyCorpus", () => {
   });
 });
 
-describe("verifyGitPreRegistration (M2 stub — M5 lands the real git walk)", () => {
-  it("never reports a pass — its return type has no ok field to misread", () => {
-    const result = verifyGitPreRegistration();
-    expect(result.implemented).toBe(false);
-    expect(result.reason.length).toBeGreaterThan(0);
-    expect(Object.keys(result)).not.toContain("ok");
+function preRegInput(overrides: Partial<PreRegistrationInput> = {}): PreRegistrationInput {
+  return {
+    suiteId: "house-skill-activation",
+    cellId: "haiku45",
+    runGroupId: "rg-1",
+    modelIdRequested: "claude-haiku-4-5",
+    suiteSpecHash: "abc123",
+    registeredAtCommit: "deadbeef",
+    suiteRegisteredAt: "2026-08-09",
+    modelReleasedAt: "2026-09-01",
+    modelSourceUrl: "https://www.anthropic.com/news/claude-haiku-4-5",
+    ...overrides,
+  };
+}
+
+describe("evaluatePreRegistration (SPEC §7: recompute suiteSpecHash, walk git, read models.json, assert registered < released)", () => {
+  it("ok when the suite's registration commit predates the model's cited release", () => {
+    const result = evaluatePreRegistration(preRegInput());
+    expect(result.ok).toBe(true);
+    expect(result.reason).toBeUndefined();
+  });
+
+  it("not ok when no commit in history reproduces the suiteSpecHash — the claim cannot be made at all", () => {
+    const result = evaluatePreRegistration(preRegInput({ registeredAtCommit: undefined, suiteRegisteredAt: undefined }));
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("no commit");
+  });
+
+  it("not ok when models.json has no entry for the requested model", () => {
+    const result = evaluatePreRegistration(preRegInput({ modelReleasedAt: undefined, modelSourceUrl: undefined }));
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("models.json");
+  });
+
+  it("not ok when the suite was registered ON OR AFTER the model's release — the real, checkable failure case", () => {
+    const result = evaluatePreRegistration(preRegInput({ suiteRegisteredAt: "2026-09-01", modelReleasedAt: "2026-06-30" }));
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("not before");
+  });
+
+  it("not ok on an exact tie (registered the same day as release — strictly-before, not on-or-before)", () => {
+    const result = evaluatePreRegistration(preRegInput({ suiteRegisteredAt: "2026-06-30", modelReleasedAt: "2026-06-30" }));
+    expect(result.ok).toBe(false);
+  });
+
+  it("carries every input field through on the result for the CLI to print (commit SHA, both dates)", () => {
+    const result = evaluatePreRegistration(preRegInput());
+    expect(result.registeredAtCommit).toBe("deadbeef");
+    expect(result.suiteRegisteredAt).toBe("2026-08-09");
+    expect(result.modelReleasedAt).toBe("2026-09-01");
   });
 });

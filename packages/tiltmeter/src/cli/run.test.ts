@@ -59,6 +59,6 @@ describe("runCli verify", () => {
     const code = await runCli(["verify"], io, { cwd: dir, env: {} });
     expect(code).toBe(CLI_EXIT.CLEAN);
     expect(out.some((line) => line.includes("nothing to verify"))).toBe(true);
-    expect(out.some((line) => line.includes("NOT IMPLEMENTED"))).toBe(true);
+    expect(out.some((line) => line.includes("no readings to check yet"))).toBe(true);
   });
 });

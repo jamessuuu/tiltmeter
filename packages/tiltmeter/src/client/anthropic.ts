@@ -78,6 +78,7 @@ interface AnthropicContentBlock {
   type: string;
   name?: string;
   input?: Record<string, unknown>;
+  text?: string;
 }
 
 interface AnthropicMessageResponse {
@@ -87,13 +88,23 @@ interface AnthropicMessageResponse {
   usage?: { input_tokens?: number; output_tokens?: number };
 }
 
+/** M5: concatenate every `text` content block (SPEC §3.2 `literal-prefix` — the ONLY scorer that reads this field, and only for a literal comparison, never prose interpretation). `undefined` (not `""`) when the response has no text block at all, matching `ModelTrialResponse.text`'s optionality under `exactOptionalPropertyTypes`. */
+function extractText(content: AnthropicContentBlock[]): string | undefined {
+  const textBlocks = content.filter((b) => b.type === "text" && typeof b.text === "string");
+  if (textBlocks.length === 0) return undefined;
+  return textBlocks.map((b) => b.text).join("");
+}
+
 function toModelTrialResponse(body: AnthropicMessageResponse, requestedModel: string): ModelTrialResponse {
-  const toolUseBlocks: ToolUseBlock[] = (body.content ?? [])
+  const content = body.content ?? [];
+  const toolUseBlocks: ToolUseBlock[] = content
     .filter((b): b is AnthropicContentBlock & { type: "tool_use"; name: string } => b.type === "tool_use" && typeof b.name === "string")
     .map((b) => ({ type: "tool_use" as const, name: b.name, input: b.input ?? {} }));
+  const text = extractText(content);
   return {
     stopReason: coerceStopReason(body.stop_reason),
     toolUseBlocks,
+    ...(text !== undefined ? { text } : {}),
     usage: { in: body.usage?.input_tokens ?? 0, out: body.usage?.output_tokens ?? 0 },
     modelIdResolved: body.model ?? requestedModel,
   };

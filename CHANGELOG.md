@@ -6,6 +6,106 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- M5 (the observatory — docs/SPEC.md §14/§11, DATA ONLY, zero code in
+  `observatory/`, zero live API calls): four launch suites authored from
+  REAL artifacts on this machine — `house-skill-activation` (10 real
+  `SKILL.md` frontmatter descriptions from `~/.claude/skills`: taste, retro,
+  save, scout, pulse, hub, inbox, launch, new-project, new-guild — 20
+  positive + 12 negative), `mcp-tool-selection` (real, currently-live tool
+  schemas from three PUBLIC MCP server repos — `upstash/context7`
+  (`resolve-library-id`/`query-docs`), `github/github-mcp-server`
+  (`search_issues`/`search_code`/`list_issues`), `microsoft/playwright-mcp`
+  (`browser_navigate`/`browser_snapshot`/`browser_take_screenshot`/
+  `browser_click`/`browser_type`) — each artifact's provenance carries the
+  exact repo, commit SHA, and blob SHA fetched live via `gh api`; 20
+  positive + 8 negative, including the genuinely confusable pairs SPEC §11
+  asked for — `resolve-library-id` vs `query-docs` (both take a free-text
+  `query`), `search_issues` vs `search_code` vs `list_issues`, and
+  `browser_snapshot` vs `browser_take_screenshot` (the upstream README
+  itself warns about this exact confusion). Nothing from any EMPLOYER or
+  CLIENT world appears in any suite — checked twice: a grep sweep during
+  authoring caught and replaced two real client-name references
+  (`routing-adherence` originally named two real employer-side clients and one real
+  client-world engagement by name; all three are now generic placeholders), and
+  `observatory.test.ts` asserts `mcp-tool-selection`'s artifacts are 100%
+  `origin: "public"`.
+
+  `routing-adherence` (16 positive + 6 negative) vendors the worlds-router +
+  routing-discipline blocks from `~/.claude/CLAUDE.md`/`ECOSYSTEM.md`,
+  presented with three tool-schema artifacts this suite's own `docs` field
+  documents as authored encodings (not verbatim file content) of that
+  policy: `route(world)`, `split_task()` (CLAUDE.md's own explicit "one
+  session per world" rule), and `select_pattern(pattern)` (ECOSYSTEM.md §4's
+  routing table, exercised via a genuine two-step `tool-order` sequence
+  mirroring ECOSYSTEM.md's own LEVEL 0/LEVEL 1 chain of command — world
+  routing happens first, pattern selection second) plus a `literal-prefix`
+  "AMBIGUOUS:" channel for a request that genuinely can't be routed without
+  guessing. `output-contract` (18 positive + 8 negative) renders
+  ECOSYSTEM.md §6's Brief/Verdict/Handoff artifact vocabulary as typed tool
+  schemas (`json-schema-valid`/`arg-required-keys`) plus a `decline
+  (reason_code)` channel (`arg-enum`) — SPEC §11's own phrase, honestly
+  recorded as authored for this suite rather than vendored from an existing
+  doc. **Exactly 108 active items, 31.5% negative**, matching SPEC §11's own
+  numbers precisely (verified in `observatory.test.ts`).
+
+  `core/suite.ts`'s `ExpectSchema` gains the five scorer kinds M1 deferred
+  (`core/scorers.ts` implements them): `arg-enum`, `arg-required-keys`,
+  `tool-order` (the one scorer that reads the FULL `toolUseBlocks` sequence,
+  not just the first), `literal-prefix` (a byte-literal check against a new
+  optional `ModelTrialResponse.text` field — extracted from real `text`
+  content blocks in `src/client/anthropic.ts`, scripted via `FakeModelClient`'s
+  new `textTrial`/`multiToolTrial` helpers), and `json-schema-valid` (a
+  deliberately minimal in-house structural validator — `type`/`required`/
+  `properties`/`enum`/`items` only, no `$ref`/`oneOf`/`allOf`/`format` — the
+  schema is carried INLINE on the item rather than as SPEC §3.2's literal
+  `schemaRef` indirection, a recorded deviation that keeps every item
+  self-contained for the immutability check below).
+
+  New `core/models.ts` (`observatory/models.json`): cited `releasedAt` +
+  `sourceUrl` per model, fetched live — Haiku 4.5 (2025-10-15,
+  anthropic.com/news/claude-haiku-4-5), Sonnet 5 (2026-06-30,
+  .../claude-sonnet-5), Opus 5 (2026-07-24, .../claude-opus-5), Fable 5
+  (2026-06-09, .../claude-fable-5-mythos-5). New `observatory/panel.json`:
+  the standing panel SPEC §8 names exactly — Haiku 4.5 + Sonnet 5 + the
+  mandatory `haiku45-null` cell (`hasNullPair`, `core/plan.ts`, verified).
+
+  New `core/lint.ts` + `tiltmeter lint` (`src/cli/commands/lint.ts`):
+  negatives quota (already `meetsNegativesQuota` from M1), a maxTokens
+  headroom floor (`4 * TYPICAL_TOOL_CALL_OUTPUT_TOKENS` — SPEC §9's own
+  "4× the largest expected output" operationalized as a documented, generous
+  fixed floor since a suite has no explicit per-item expected-output-size
+  field), a dangling-artifact-ref check, and SPEC §3.1 Decision 2's
+  anti-p-hacking item-immutability check — `checkItemImmutability` (core,
+  pure) compares the current suite's items against the suite file's content
+  at git `HEAD` (resolved by new `src/node/git.ts`, which every lint/verify
+  git-walk goes through) byte-for-byte EXCLUDING the `retired` field (so
+  retiring an item is the one allowed change; editing any other field, or
+  removing an item outright instead of retiring it, both fail lint). All
+  four committed suites lint clean.
+
+  `tiltmeter verify`'s M2 stub (`verifyGitPreRegistration`, which always
+  returned `implemented:false`) is REPLACED with the real SPEC §7
+  pre-registration proof: `core/verify.ts`'s new `evaluatePreRegistration`
+  is the pure decision (given a resolved commit + date + a model's cited
+  `releasedAt`, is `suiteRegisteredAt < modelReleasedAt`); `src/node/git.ts`'s
+  `findFirstCommitWithHash` is the git walk (`git log --follow` over a
+  suite's file history, oldest first, recomputing `suiteSpecHash` at each
+  commit via `git show <sha>:<path>` until the reading's exact pinned hash
+  is reproduced) that resolves the facts the decision needs. `src/cli/verify.ts`
+  runs this per reading found. Since `observatory/readings/` is
+  DELIBERATELY EMPTY (see its own README — the first run group is a
+  James-gated step M5 does not take), the walk today always reports
+  "nothing to check yet" rather than a false pass; `src/node/git.test.ts`
+  proves the walk itself against a real temp git repo (multi-commit
+  history, a hash reached only after a later edit, a historical revision
+  that no longer parses under the current schema).
+
+  Gate (docs/SPEC.md §14 M5): `tiltmeter verify` green on the corpus (empty,
+  honestly reported); all four suites lint clean; the Haiku↔Sonnet
+  comparison and the null-pair noise floor are NOT published (no run has
+  happened) — that is the correct, honest M5 state, not a gap. 317 tests
+  green (30 files), zero regressions to the 253 from M0-M4.
+
 - M4 (real client — docs/SPEC.md §14/§7/§8/§9): `src/client/anthropic.ts`
   (`AnthropicModelClient`) implements the extended `ModelClient` interface
   (`core/model-client.ts` now carries `countTokens`/`submitBatch`/

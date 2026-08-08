@@ -148,14 +148,25 @@ export {
   type IndexEntryFields,
 } from "./core/index-chain.js";
 export {
+  evaluatePreRegistration,
   readingBytes,
   verifyCorpus,
-  verifyGitPreRegistration,
   verifyReadingBodyHash,
   type CorpusVerifyResult,
-  type GitPreRegistrationNotImplemented,
+  type PreRegistrationInput,
+  type PreRegistrationResult,
   type ReadingVerifyResult,
 } from "./core/verify.js";
+export {
+  findModelEntry,
+  parseModels,
+  ModelEntrySchema,
+  ModelsSchema,
+  ModelStatusSchema,
+  type ModelEntry,
+  type Models,
+  type ModelStatus,
+} from "./core/models.js";
 
 // M4 (SPEC §14): real client scaffolding, cost/caps/batch/plan/orchestration.
 export {
@@ -227,3 +238,14 @@ export {
   type RunGroupOptions,
   type RunGroupResult,
 } from "./core/run-orchestrator.js";
+
+// M5 (SPEC §14): lint (negatives quota + item immutability vs git + provenance + maxTokens headroom).
+export {
+  checkItemImmutability,
+  lintSuite,
+  MIN_MAX_TOKENS_HEADROOM_MULTIPLE,
+  TYPICAL_TOOL_CALL_OUTPUT_TOKENS,
+  type LintIssue,
+  type LintIssueCode,
+  type LintResult,
+} from "./core/lint.js";

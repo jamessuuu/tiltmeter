@@ -50,6 +50,14 @@ export interface TokenUsage {
 export interface ModelTrialResponse {
   stopReason: StopReason;
   toolUseBlocks: ToolUseBlock[];
+  /**
+   * Concatenated text content blocks, if any (M5, SPEC §3.2's
+   * `literal-prefix` scorer: "regex scorers exist only for control tokens
+   * an instruction explicitly demands, never for prose semantics" — this
+   * field exists ONLY so `literal-prefix` can check a literal,
+   * explicitly-demanded prefix; no scorer reads it for meaning).
+   */
+  text?: string;
   usage: TokenUsage;
   /** The API response's resolved model id (SPEC §4 alias substitution: `axes.modelIdResolved`). */
   modelIdResolved: string;

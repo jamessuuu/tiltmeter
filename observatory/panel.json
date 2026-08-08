@@ -1,0 +1,21 @@
+{
+  "formatVersion": 1,
+  "id": "standing",
+  "entries": [
+    {
+      "cellId": "haiku45",
+      "modelIdRequested": "claude-haiku-4-5",
+      "role": "standing"
+    },
+    {
+      "cellId": "sonnet5",
+      "modelIdRequested": "claude-sonnet-5",
+      "role": "standing"
+    },
+    {
+      "cellId": "haiku45-null",
+      "modelIdRequested": "claude-haiku-4-5",
+      "role": "null"
+    }
+  ]
+}

@@ -6,8 +6,10 @@
  */
 export {
   FakeModelClient,
+  multiToolTrial,
   noResultTrial,
   noToolTrial,
+  textTrial,
   toolUseTrial,
   type FakeModelClientOptions,
   type FakeScript,

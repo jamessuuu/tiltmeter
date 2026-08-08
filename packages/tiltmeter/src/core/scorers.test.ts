@@ -111,3 +111,172 @@ describe("tool-in-set", () => {
     expect(score(response(), expect_).outcome).toBe("fail");
   });
 });
+
+describe("arg-enum", () => {
+  const expect_ = { scorer: "arg-enum" as const, name: "decline", key: "reason_code", values: ["out-of-scope", "needs-human"] };
+
+  it("passes when the arg value is a member of the declared set", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "decline", input: { reason_code: "needs-human" } }],
+    });
+    expect(score(r, expect_).outcome).toBe("pass");
+  });
+
+  it("fails when the arg value is not a member", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "decline", input: { reason_code: "made-up-reason" } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+
+  it("fails when the tool name differs, even with a valid-looking value elsewhere", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "other-tool", input: { reason_code: "needs-human" } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+});
+
+describe("arg-required-keys", () => {
+  const expect_ = { scorer: "arg-required-keys" as const, name: "emit", keys: ["title", "body"] };
+
+  it("passes when every required key is present, regardless of value", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "emit", input: { title: "", body: "x", extra: 1 } }],
+    });
+    expect(score(r, expect_).outcome).toBe("pass");
+  });
+
+  it("fails when a required key is missing", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "emit", input: { title: "only this" } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+});
+
+describe("tool-order", () => {
+  const expect_ = { scorer: "tool-order" as const, names: ["route", "split_task"] };
+
+  it("passes on an exact ordered match of the FULL sequence", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [
+        { type: "tool_use", name: "route", input: {} },
+        { type: "tool_use", name: "split_task", input: {} },
+      ],
+    });
+    expect(score(r, expect_).outcome).toBe("pass");
+  });
+
+  it("fails on the right names in the wrong order", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [
+        { type: "tool_use", name: "split_task", input: {} },
+        { type: "tool_use", name: "route", input: {} },
+      ],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+
+  it("fails when the sequence is a prefix but not the full match", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "route", input: {} }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+
+  it("fails when extra calls follow a correct prefix", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [
+        { type: "tool_use", name: "route", input: {} },
+        { type: "tool_use", name: "split_task", input: {} },
+        { type: "tool_use", name: "extra", input: {} },
+      ],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+});
+
+describe("literal-prefix", () => {
+  const expect_ = { scorer: "literal-prefix" as const, prefix: "ROUTE:" };
+
+  it("passes when the text starts with the literal prefix", () => {
+    expect(score(response({ text: "ROUTE: personal" }), expect_).outcome).toBe("pass");
+  });
+
+  it("fails when the text does not start with it", () => {
+    expect(score(response({ text: "Sure, routing to personal" }), expect_).outcome).toBe("fail");
+  });
+
+  it("fails when there is no text at all", () => {
+    expect(score(response(), expect_).outcome).toBe("fail");
+  });
+
+  it("is a byte-literal comparison, not case-insensitive", () => {
+    expect(score(response({ text: "route: personal" }), expect_).outcome).toBe("fail");
+  });
+});
+
+describe("json-schema-valid", () => {
+  const expect_ = {
+    scorer: "json-schema-valid" as const,
+    name: "emit_verdict",
+    schema: {
+      type: "object",
+      required: ["verdict", "reasons"],
+      properties: {
+        verdict: { type: "string", enum: ["SHIP", "FIX", "RECONCEIVE"] },
+        reasons: { type: "array", items: { type: "string" } },
+      },
+    },
+  };
+
+  it("passes on a structurally valid object", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "emit_verdict", input: { verdict: "SHIP", reasons: ["clean"] } }],
+    });
+    expect(score(r, expect_).outcome).toBe("pass");
+  });
+
+  it("fails when a required property is missing", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "emit_verdict", input: { verdict: "SHIP" } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+
+  it("fails when a property's enum value is not one of the declared options", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "emit_verdict", input: { verdict: "MAYBE", reasons: [] } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+
+  it("fails when an array property's items are the wrong type", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "emit_verdict", input: { verdict: "SHIP", reasons: [42] } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+
+  it("fails when the wrong tool was called", () => {
+    const r = response({
+      stopReason: "tool_use",
+      toolUseBlocks: [{ type: "tool_use", name: "other", input: { verdict: "SHIP", reasons: [] } }],
+    });
+    expect(score(r, expect_).outcome).toBe("fail");
+  });
+});
