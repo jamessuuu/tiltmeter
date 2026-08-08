@@ -155,9 +155,11 @@ active items, 31.5% negative** — `tiltmeter lint` and the regression tests in
 | `output-contract` | The ecosystem's own artifact vocabulary (Brief/Verdict/Handoff) + a `decline(reason_code)` channel | 18 pos + 8 neg = 26 | `output-format`, `refusal-shape` |
 
 **There is no time series yet — that is what pre-registration means. The
-series starts here.** Nothing from any other world appears in
-any suite (verified: `mcp-tool-selection`'s artifacts are 100% public;
-every other suite draws only from this machine's own `~/.claude`).
+series starts here.** Nothing from any private employer or client world
+appears in any suite (verified: `mcp-tool-selection`'s artifacts are 100%
+public; every other suite draws only from this machine's own `~/.claude`,
+with world names and filesystem roots generalized to neutral placeholders
+before commit — see `routing-adherence`'s `docs` field).
 
 ## Failure modes (SPEC §9 — the ugly paths, by contract)
 

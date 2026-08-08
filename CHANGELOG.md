@@ -267,11 +267,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
   asked for — `resolve-library-id` vs `query-docs` (both take a free-text
   `query`), `search_issues` vs `search_code` vs `list_issues`, and
   `browser_snapshot` vs `browser_take_screenshot` (the upstream README
-  itself warns about this exact confusion). Nothing from any EMPLOYER or
-  CLIENT world appears in any suite — checked twice: a grep sweep during
-  authoring caught and replaced two real client-name references
-  (`routing-adherence` originally named two real employer-side clients and one real
-  client-world engagement by name; all three are now generic placeholders), and
+  itself warns about this exact confusion). Nothing from any private
+  employer or client world appears in any suite — checked twice: a grep
+  sweep during authoring caught and replaced two real client-name references
+  (`routing-adherence` originally named two real employer-side clients and
+  one real freelance client by name; all three are now generic
+  placeholders), and
   `observatory.test.ts` asserts `mcp-tool-selection`'s artifacts are 100%
   `origin: "public"`.
 

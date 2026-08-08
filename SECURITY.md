@@ -155,8 +155,15 @@ prompt, a tool schema that is not meant to be public), **review the suite
 file before committing it** — vendoring is the point, and it is not
 reversible after a public push. James's own suites (M5) draw only from
 `~/.claude` (marked `origin: "private"`) and public repos (`origin:
-"public"`, byte-verified against a commit); nothing from the EMPLOYER or
-CLIENT worlds may ever appear in a suite committed to this repo.
+"public"`, byte-verified against a commit); nothing from any private
+employer or client world may ever appear in a suite committed to this
+repo. Where a private artifact's real content would itself disclose a
+third party's (an employer's) internal workflow structure — not just
+James's own — the artifact's `source` records that it is a
+derived-and-abstracted encoding rather than verbatim text, and the real
+names are generalized to neutral placeholders before the artifact is ever
+committed (`routing-adherence`'s worlds router is the example: real world
+names, filesystem roots, and employer-identifying specifics never appear).
 
 ## Reporting
 

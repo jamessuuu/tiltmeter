@@ -517,7 +517,7 @@ the runner, the attribution model, the statistics, and one real reading. M6–M8
    2026-08-08; fallback `@jamessuuu/tiltmeter` and `tiltmeter-dev.vercel.app`.
 3. **MCP tool schemas in `mcp-tool-selection`** — vendoring third-party open-source tool definitions with
    attribution is the plan; James's call on which servers appear publicly (context7/github/playwright
-   are public; nothing from other worlds may ever appear).
+   are public; nothing from any private employer or client world may ever appear).
 4. **Cadence and budget sign-off** — weekly at ~$8–10/mo (the spec's default) vs the ~$4/mo fallback
    (biweekly, Haiku standing). This is the feasibility §5.C YELLOW decision and it is James's, not the
    architect's.
