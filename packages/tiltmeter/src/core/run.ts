@@ -116,7 +116,7 @@ export async function runSuite(
       trials.push(trial);
       okCount++;
     }
-    itemReadings.push({ id: item.id, k: suite.sampling.k, passes, trials });
+    itemReadings.push({ id: item.id, polarity: item.polarity, k: suite.sampling.k, passes, trials });
   }
 
   const finishedAt = ctx.now();

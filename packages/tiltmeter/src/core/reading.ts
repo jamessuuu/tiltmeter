@@ -5,6 +5,7 @@
  * history by `compare`/`verify`.
  */
 import { z } from "zod";
+import { PolaritySchema } from "./suite.js";
 
 export const ReadingAxesSchema = z.object({
   suiteSpecHash: z.string().min(1),
@@ -53,8 +54,17 @@ export const TrialSchema = z.object({
 });
 export type Trial = z.infer<typeof TrialSchema>;
 
+/**
+ * SPEC §4/§5: `polarity` travels with the reading (not just the suite file)
+ * because `core/compare` never has suite context — only two committed
+ * readings (see the comment on `compareReadings`). Without it, `compare`
+ * could not tell which common items feed `triggerRate` vs
+ * `falsePositiveRate` when building the per-metric, per-item pairs the
+ * attribution/statistics layer bootstraps over.
+ */
 export const ItemReadingSchema = z.object({
   id: z.string().min(1),
+  polarity: PolaritySchema,
   k: z.number().int().positive(),
   passes: z.number().int().nonnegative(),
   trials: z.array(TrialSchema),

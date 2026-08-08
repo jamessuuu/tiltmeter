@@ -5,13 +5,14 @@
  * `src/cli/index.ts` (the bin), which just forwards real argv/streams/env
  * here (mirrors snapgauge's `runCli` shape).
  *
- * M0: the program shell only (`--version`, `--help`). Subcommands land
- * milestone by milestone — SPEC §7's full table is `init`, `lint`, `plan`,
- * `run`, `compare`, `report`, `verify`; `compare` and `verify` land at
- * M1/M2 per docs/SPEC.md §14.
+ * M0/M1: the program shell + version/help only. Subcommands land milestone
+ * by milestone — SPEC §7's full table is `init`, `lint`, `plan`, `run`,
+ * `compare`, `report`, `verify`. `verify` lands at M2 (this file); the rest
+ * follow at M4/M5 once the real client and observatory exist.
  */
 import { Command } from "commander";
 import { TILTMETER_VERSION } from "../core/version.js";
+import { runVerify } from "./verify.js";
 
 export interface CliIo {
   stdout: (text: string) => void;
@@ -23,7 +24,17 @@ export interface CliEnv {
   env: Record<string, string | undefined>;
 }
 
-function buildProgram(io: CliIo): Command {
+/** Signals a specific process exit code from inside a Commander action, distinct from commander's own usage-error path (always `CLI_EXIT.USAGE`). */
+class CliExitError extends Error {
+  readonly exitCode: number;
+  constructor(exitCode: number) {
+    super(`cli exit ${String(exitCode)}`);
+    this.name = "CliExitError";
+    this.exitCode = exitCode;
+  }
+}
+
+function buildProgram(io: CliIo, env: CliEnv): Command {
   const program = new Command();
   program
     .name("tiltmeter")
@@ -40,25 +51,39 @@ function buildProgram(io: CliIo): Command {
         io.stderr(str.replace(/\n$/, ""));
       },
     });
+
+  program
+    .command("verify")
+    .description(
+      "Verify committed reading body hashes and the readings/index.json hash chain (SPEC §7). " +
+        "Reports the git pre-registration walk as not-yet-implemented — it lands at M5, never a false pass.",
+    )
+    .action(() => {
+      const result = runVerify(env.cwd, io);
+      if (!result.ok) throw new CliExitError(CLI_EXIT.VERIFY_FAILED);
+    });
+
   return program;
 }
 
 /** Exit codes (SPEC §13 typed error taxonomy; usage errors are always 4). */
 export const CLI_EXIT = {
   CLEAN: 0,
+  VERIFY_FAILED: 1,
   USAGE: 4,
 } as const;
 
 export async function runCli(
   argv: string[],
   io: CliIo,
-  _env: CliEnv,
+  env: CliEnv,
 ): Promise<number> {
-  const program = buildProgram(io);
+  const program = buildProgram(io, env);
   try {
     await program.parseAsync(argv, { from: "user" });
     return CLI_EXIT.CLEAN;
   } catch (error) {
+    if (error instanceof CliExitError) return error.exitCode;
     if (error instanceof Error && "code" in error) {
       const code = (error as { code?: string }).code;
       if (code === "commander.helpDisplayed" || code === "commander.version") {

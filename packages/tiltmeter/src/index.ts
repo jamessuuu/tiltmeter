@@ -82,10 +82,44 @@ export {
 } from "./core/reading.js";
 export { computeMetrics, runSuite, type RunContext } from "./core/run.js";
 export {
+  buildItemComparisons,
+  classify,
   compareReadings,
+  pairsForMetric,
   worstMetricVerdict,
   type Comparison,
+  type ComparisonAxis,
+  type ItemComparison,
+  type ItemLabel,
   type MetricDelta,
   type MetricVerdict,
   type Verdict,
 } from "./core/compare.js";
+export {
+  assertRebaselined,
+  hasRebaselineRunGroup,
+  isStale,
+  staleReadings,
+} from "./core/rebaseline.js";
+export {
+  appendEntry,
+  computeEntryHash,
+  IndexEntryCellSchema,
+  IndexEntrySchema,
+  parseIndex,
+  serializeIndex,
+  verifyChain,
+  type ChainVerifyResult,
+  type IndexEntry,
+  type IndexEntryCell,
+  type IndexEntryFields,
+} from "./core/index-chain.js";
+export {
+  readingBytes,
+  verifyCorpus,
+  verifyGitPreRegistration,
+  verifyReadingBodyHash,
+  type CorpusVerifyResult,
+  type GitPreRegistrationNotImplemented,
+  type ReadingVerifyResult,
+} from "./core/verify.js";

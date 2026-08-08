@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CLI_EXIT, runCli } from "./run.js";
 import { TILTMETER_VERSION } from "../core/version.js";
 
@@ -37,5 +40,25 @@ describe("runCli", () => {
     const code = await runCli(["--not-a-real-flag"], io, ENV);
     expect(code).toBe(CLI_EXIT.USAGE);
     expect(err.join("\n").length).toBeGreaterThan(0);
+  });
+});
+
+describe("runCli verify", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "tiltmeter-cli-verify-"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("exits clean when there is no readings corpus yet", async () => {
+    const { io, out } = makeIo();
+    const code = await runCli(["verify"], io, { cwd: dir, env: {} });
+    expect(code).toBe(CLI_EXIT.CLEAN);
+    expect(out.some((line) => line.includes("nothing to verify"))).toBe(true);
+    expect(out.some((line) => line.includes("NOT IMPLEMENTED"))).toBe(true);
   });
 });
