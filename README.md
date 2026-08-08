@@ -71,8 +71,8 @@ attribution model it is built on land first.
 
 | M | Deliverable | Status |
 |---|---|---|
-| M0 | Workspace, TS strict, ESLint 9, Vitest 4, 5-stage CI, LICENSE, SECURITY.md | in progress |
-| M1 | Walking skeleton: suite schema, `skill-tool@1` presentation, 3 scorers, `FakeModelClient`, `run`, `compare` (mean delta) | not started |
+| M0 | Workspace, TS strict, ESLint 9, Vitest 4, 5-stage CI, LICENSE, SECURITY.md | done |
+| M1 | Walking skeleton: suite schema, `skill-tool@1` presentation, 3 scorers, `FakeModelClient`, `run`, `compare` (mean delta) | done |
 | M2 | Attribution: axis tuple, run groups, `cannot-attribute`, rebaseline, hash-chained index, `verify` | not started |
 | M3 | Statistics: seeded paired bootstrap, MDE, per-metric verdicts, calibration sims | not started |
 | M4–M8 | Real client, the observatory's own suites, the site, scheduled workflows, npm publish | not started |

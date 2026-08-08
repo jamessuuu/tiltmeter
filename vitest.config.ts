@@ -2,13 +2,11 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // Vitest 4: `passWithNoTests` is a root-only option (NonProjectOptions),
-    // not settable per-project — it applies to every project's run. M0
-    // scaffold: the golden/calibration eval suites land at M1/M3 (SPEC §12,
-    // §14), so the "eval" project has no files yet. Once M1 lands its first
-    // `evals/**/*.eval.test.ts` file, both projects always have matching
-    // files and this reverts to strict (the default, `false`).
-    passWithNoTests: true,
+    // M1 landed evals/golden.eval.test.ts, so both projects always have
+    // matching files now — back to strict (the default, `false`: an empty
+    // project run is a red CI, not a silent pass). See CHANGELOG.md M0 for
+    // why this was `true` before M1 (vitest 4 made `passWithNoTests` a
+    // root-only option, not settable per-project).
     projects: [
       {
         test: {

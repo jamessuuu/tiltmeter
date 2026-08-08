@@ -1,0 +1,10 @@
+{
+  "formatVersion": 1,
+  "id": "skill-tool@1",
+  "skillToolDescriptionHeader": "A skill is a packaged procedure for a particular kind of task. When the current request matches one, call this tool with its name; otherwise do not call it.",
+  "skillToolName": "Skill",
+  "system": "You are an agent with access to a set of skills, exposed through the Skill tool below. If the user's request matches a skill's description, call Skill with that skill's name. If nothing matches, answer normally without calling Skill.",
+  "toolChoice": {
+    "type": "auto"
+  }
+}

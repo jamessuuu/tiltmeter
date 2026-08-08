@@ -109,11 +109,13 @@ export default tseslint.config(
     },
   },
   {
-    // SHA-256 hot loop: typed-array indexing under noUncheckedIndexedAccess.
-    // Bounds are structurally guaranteed (fixed-size Uint32Array, loop
-    // bounds); per-access guards would be noise. The FIPS vectors + the
-    // node:crypto cross-check in sha256.test.ts are the real safety net.
-    files: ["packages/tiltmeter/src/core/sha256.ts"],
+    // SHA-256 hot loop, and the Fisher–Yates swap in core/prng.ts: typed
+    // indexing under noUncheckedIndexedAccess where bounds are structurally
+    // guaranteed (fixed-size Uint32Array / loop invariant), so per-access
+    // guards would be noise. The FIPS vectors + the node:crypto cross-check
+    // in sha256.test.ts are the real safety net for the former; prng.test.ts
+    // (SPEC §5: seeded, deterministic) covers the latter.
+    files: ["packages/tiltmeter/src/core/sha256.ts", "packages/tiltmeter/src/core/prng.ts"],
     rules: {
       "@typescript-eslint/no-non-null-assertion": "off",
     },
