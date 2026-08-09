@@ -18,6 +18,7 @@
     "ci:pack-check": "node scripts/pack-check.mjs",
     "suite-lint": "pnpm --filter tiltmeter build && node packages/tiltmeter/dist/cli/index.js lint",
     "brand": "node scripts/brand.mjs --project=tiltmeter --out=apps/web/public/brand",
+    "diagram": "node scripts/diagram.mjs --out=apps/web/public/diagram",
     "e2e": "pnpm --filter web build && pnpm --filter web e2e"
   },
   "devDependencies": {

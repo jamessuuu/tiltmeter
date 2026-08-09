@@ -30,3 +30,22 @@ body {
 .hairline {
   border-color: var(--color-rule);
 }
+
+/*
+ * DemoVideo (components/DemoVideo.tsx): DESIGN-DIRECTION.md's motion rule
+ * -- "prefers-reduced-motion gets the poster frame and a link, never an
+ * autoplaying video." A pure CSS swap so the choice is honoured before any
+ * client JS runs (there is none here -- this is a Server Component) and
+ * survives the static export with no hydration flash.
+ */
+.demo-reduced {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-video {
+    display: none;
+  }
+  .demo-reduced {
+    display: block;
+  }
+}

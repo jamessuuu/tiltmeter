@@ -48,6 +48,15 @@ jobs:
         run: |
           pnpm brand
           git diff --exit-code -- apps/web/public/brand
+      - name: diagram-drift
+        # DESIGN-DIRECTION.md: the axis-tuple mechanism diagram is generated
+        # by scripts/diagram.mjs the same way scripts/brand.mjs is — no
+        # Math.random, no webfont, no network, no date stamping — so CI
+        # regenerates the committed apps/web/public/diagram/** asset and
+        # fails on any byte drift, same pattern as brand-drift above.
+        run: |
+          pnpm diagram
+          git diff --exit-code -- apps/web/public/diagram
       - name: eval
         # Classifier goldens (>=24 at 100% exact match) + the two calibration
         # gates (FPR <=5%/200, power >=90%/200) — SPEC §12. $0, offline,

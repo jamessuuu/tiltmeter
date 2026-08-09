@@ -6,6 +6,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 ## [Unreleased]
 
 ### Added
+- Design/documentation pass (DESIGN-DIRECTION.md, after M8): `scripts/diagram.mjs` — a deterministic,
+  CI-drift-checked (`pnpm diagram`, next to `brand-drift`) generator for the axis-tuple mechanism diagram,
+  inlined on `/` and `/docs` via `components/AttributionDiagram.tsx` with a real `<title>`/`<desc>`, one
+  amber element (the `cannot-attribute` arrow). A demo recording (`scripts/record-demo.mjs`, already
+  present) run against the live deployed site, embedded via `components/DemoVideo.tsx`
+  (autoplay/muted/loop/playsInline, poster frame, `prefers-reduced-motion` falls back to the poster + a
+  link via a pure-CSS swap in `globals.css`). `/` rebuilt around evidence density: the two calibration
+  numbers at hero size (`lib/calibration.ts`, read from the committed `evals/calibration/results/latest.json`),
+  then the diagram, the demo, the pre-registration argument (`tiltmeter verify`), the suite inventory (now
+  computed inline rather than hand-counted), and the honest launch state. A new `/docs` route: install, the
+  no-key quickstart, the attribution model, the statistics, item immutability, the cost model, the secret
+  boundary, failure modes, limitations. README restructured to the same evidence-first order, plus the
+  BRAND-KIT.md lockup header it was missing. e2e coverage: `apps/web/e2e/demo-and-diagram.spec.ts` (diagram
+  a11y shape, video attributes + real asset fetches, the reduced-motion swap, `/docs` reachability) plus
+  `/docs` added to `every-page.spec.ts`'s footer/favicon sweep — 21 Playwright tests total, up from 14.
 - M8 (publish readiness — docs/SPEC.md §7/§14): `tiltmeter init
   --from-skills <dir> | --from-mcp <tools.json> | --from-snapgauge <snap.json>`
   — the scaffolding path that makes this a tool other people can point at

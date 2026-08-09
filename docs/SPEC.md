@@ -393,6 +393,11 @@ Actions job also pings a deploy hook as a fallback.
   **No ranking, no scores, no leaderboard** — the death-condition guard, and a design-review checklist item.
 - **`/methodology`** — presentation templates, scorers, k/temperature and why not 0, the axis rules,
   the bootstrap and its bar, the noise floor, cost policy, and **Limitations** (§13).
+- **`/docs`** — added in the design/documentation pass after M8: install, a five-minute no-key quickstart
+  (`init --from-skills` → `lint` → `plan --offline`), the attribution model with the mechanism diagram
+  (`scripts/diagram.mjs`, CI-drift-checked like `scripts/brand.mjs`), the statistics, item immutability,
+  the cost model, the secret boundary, failure modes, and limitations — written for a reader who has never
+  seen this project. `/` and `/docs` both embed the same diagram component (`components/AttributionDiagram.tsx`).
 
 ---
 

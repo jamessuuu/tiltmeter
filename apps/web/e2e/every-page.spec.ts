@@ -5,6 +5,7 @@ const PAGES = [
   "/",
   "/models/",
   "/methodology/",
+  "/docs/",
   "/suites/house-skill-activation/",
   "/readings/none-yet/",
 ];
