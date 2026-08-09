@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { activeItems, meetsNegativesQuota, suiteSpecHash } from "tiltmeter";
 import { loadAllSuites, loadAllReadings, totalActiveItemCount } from "@/lib/observatory";
@@ -28,7 +29,22 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       {/* ---- hero: name, one-line claim, the two calibration numbers ---- */}
-      <h1 className="text-2xl font-semibold tracking-tight">tiltmeter</h1>
+      {/* The project glyph leads its own page: BRAND-KIT "Icon hierarchy"
+       * (2026-08-09) — the glyph is the identity, the chip in the footer is
+       * the maker's mark. Before this, tiltmeter's own mark appeared nowhere
+       * on the page it belongs to, only as a favicon. Decorative next to the
+       * name it duplicates, so it is aria-hidden. */}
+      <div className="flex items-center gap-3">
+        <Image
+          src="/brand/glyph.svg"
+          alt=""
+          aria-hidden="true"
+          width={36}
+          height={36}
+          priority
+        />
+        <h1 className="text-2xl font-semibold tracking-tight">tiltmeter</h1>
+      </div>
       <p className="mt-2 text-ink/70 max-w-prose">
         Tells an operator when a new model release moves <em>their</em> agent harness off true — a harness
         artifact, pinned to a commit, probed with deterministic scorers. Every published number is scoped to
