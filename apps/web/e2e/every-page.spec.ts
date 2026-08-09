@@ -11,9 +11,30 @@ const PAGES = [
 ];
 
 for (const path of PAGES) {
-  test(`footer + favicon present on ${path}`, async ({ page }) => {
+  test(`header nav + footer + favicon present on ${path}`, async ({ page }) => {
     const response = await page.goto(path);
     expect(response?.status()).toBeLessThan(400);
+
+    // Added 2026-08-09: tiltmeter had a Footer but no way to navigate
+    // between pages except a browser back button or a link buried in body
+    // copy. The header nav must resolve on every route shape, keyboard
+    // reachable, no client JS required (this test's default context has JS
+    // enabled, but the header is server-rendered — see home.spec.ts for the
+    // no-JS proof on "/").
+    const nav = page.locator('nav[aria-label="primary"]');
+    await expect(nav).toBeVisible();
+    // next.config.ts sets trailingSlash: true — every internal href on this
+    // site resolves with a trailing slash, the header's links included.
+    await expect(nav.getByRole("link", { name: "models", exact: true })).toHaveAttribute("href", "/models/");
+    await expect(nav.getByRole("link", { name: "methodology", exact: true })).toHaveAttribute(
+      "href",
+      "/methodology/"
+    );
+    await expect(nav.getByRole("link", { name: "docs", exact: true })).toHaveAttribute("href", "/docs/");
+    // The glyph + wordmark link home, from the header, on every page —
+    // including the deep dynamic-route pages where there is otherwise no
+    // way back to "/" without the browser's own back button.
+    await expect(page.locator("header a[href='/']").first()).toBeVisible();
 
     const footer = page.locator("footer");
     await expect(footer).toContainText("Built by James Lorenz Santos");
