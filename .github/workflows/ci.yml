@@ -36,8 +36,18 @@ jobs:
       - name: unit
         run: pnpm test -- --project unit
       - name: e2e-smoke (Playwright against the real static export — SPEC §14 M6)
+        # `playwright`'s bin is a devDependency of the `web` workspace
+        # package only (apps/web/package.json), not hoisted to the repo
+        # root under pnpm's default (strict, non-hoisting) node_modules
+        # layout — a bare `npx playwright install ...` run from the repo
+        # root (this step's default working directory) cannot resolve it
+        # and fails with `playwright: not found` (exit 127), the way this
+        # step actually failed on GitHub Actions before this fix.
+        # `pnpm --filter web exec` runs inside apps/web with its own
+        # node_modules/.bin on PATH, the same resolution `pnpm e2e` below
+        # already relies on successfully.
         run: |
-          npx playwright install --with-deps chromium
+          pnpm --filter web exec playwright install --with-deps chromium
           pnpm e2e
       - name: brand-drift
         # SPEC §13/BRAND-KIT.md: scripts/brand.mjs is deterministic (no

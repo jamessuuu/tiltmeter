@@ -35,10 +35,21 @@ const VIEWPORT = { width: 1120, height: 700 };
 
 const pause = (p, ms) => p.waitForTimeout(ms);
 
-/** Click by visible text if present; returns whether it fired. Never throws. */
+/**
+ * Click by visible text if present; returns whether it fired. Never throws.
+ *
+ * Prefers a role="button" match and only falls back to a plain text match
+ * when no button matches — an unconditional `getByRole(...).or(getByText(...))`
+ * resolves in DOM order, and on a page whose own prose repeats a button's
+ * label (sluice's /gate copy literally says "Approve it, resume it..." above
+ * the Approve button), `.first()` silently grabs the inert paragraph instead
+ * of the control, and the click no-ops with no error. Root-caused by
+ * recording sluice's demo and finding the Approve click never landed.
+ */
 async function tryClick(page, text, timeout = 4000) {
   try {
-    const el = page.getByRole("button", { name: text }).or(page.getByText(text, { exact: false })).first();
+    const byRole = page.getByRole("button", { name: text });
+    const el = ((await byRole.count()) > 0 ? byRole : page.getByText(text, { exact: false })).first();
     await el.waitFor({ state: "visible", timeout });
     await el.scrollIntoViewIfNeeded();
     await el.click({ timeout });
@@ -66,6 +77,12 @@ const SCENARIOS = {
     await pause(page, 1400);
     await tryClick(page, "Start");
     await pause(page, 2600); // the scripted crash lands here
+    // DESIGN-DIRECTION.md's sequence is open, crash, RELOAD, approve, resume —
+    // the reload is the point: the pending gate must survive a real
+    // navigation (sessionStorage), not just React state that a client-side
+    // re-render would have kept alive anyway. See e2e/gate.spec.ts.
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await pause(page, 1400);
     await tryClick(page, "Approve");
     await pause(page, 1600);
     await tryClick(page, "Start worker");

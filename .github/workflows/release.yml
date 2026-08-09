@@ -45,13 +45,20 @@ jobs:
       - name: unit
         run: pnpm test -- --project unit
       - name: e2e-smoke (Playwright against the real static export — SPEC §14 M6)
+        # See ci.yml's matching step: `playwright`'s bin only resolves via
+        # the `web` workspace's own node_modules/.bin, not a bare `npx`
+        # from the repo root, under pnpm's default non-hoisting layout.
         run: |
-          npx playwright install --with-deps chromium
+          pnpm --filter web exec playwright install --with-deps chromium
           pnpm e2e
       - name: brand-drift
         run: |
           pnpm brand
           git diff --exit-code -- apps/web/public/brand
+      - name: diagram-drift
+        run: |
+          pnpm diagram
+          git diff --exit-code -- apps/web/public/diagram
       - name: eval
         run: pnpm eval
 
