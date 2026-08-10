@@ -1,0 +1,160 @@
+{
+  "approximate": true,
+  "caps": {
+    "maxCellUsd": 1.5,
+    "maxMonthUsd": 15,
+    "maxRunUsd": 3
+  },
+  "cells": [
+    {
+      "cellId": "haiku45",
+      "estimatedUsd": 0.066954,
+      "itemCount": 32,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "932213553c89316e1a34c0f02523d4e44b95aea31667943bfadc35bbe47a149c",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "house-skill-activation",
+      "suiteSpecHash": "6cbcf2eb4280ba9f2577a4444283142edee8c55d89c1860f330bd69640a000df"
+    },
+    {
+      "cellId": "sonnet5",
+      "estimatedUsd": 0.133908,
+      "itemCount": 32,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-sonnet-5",
+      "presentationHash": "932213553c89316e1a34c0f02523d4e44b95aea31667943bfadc35bbe47a149c",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "house-skill-activation",
+      "suiteSpecHash": "6cbcf2eb4280ba9f2577a4444283142edee8c55d89c1860f330bd69640a000df"
+    },
+    {
+      "cellId": "haiku45-null",
+      "estimatedUsd": 0.066954,
+      "itemCount": 32,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "932213553c89316e1a34c0f02523d4e44b95aea31667943bfadc35bbe47a149c",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "house-skill-activation",
+      "suiteSpecHash": "6cbcf2eb4280ba9f2577a4444283142edee8c55d89c1860f330bd69640a000df"
+    },
+    {
+      "cellId": "haiku45",
+      "estimatedUsd": 0.0599025,
+      "itemCount": 28,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "53b498e6bc45cc7300648e8d76d6913c06b78e8f60af9e6e74583dbccdf47285",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "mcp-tool-selection",
+      "suiteSpecHash": "9981576c3de053b288089f31c2736f96c7c5ed76a370bf1b17840c51fb4841e8"
+    },
+    {
+      "cellId": "sonnet5",
+      "estimatedUsd": 0.119805,
+      "itemCount": 28,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-sonnet-5",
+      "presentationHash": "53b498e6bc45cc7300648e8d76d6913c06b78e8f60af9e6e74583dbccdf47285",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "mcp-tool-selection",
+      "suiteSpecHash": "9981576c3de053b288089f31c2736f96c7c5ed76a370bf1b17840c51fb4841e8"
+    },
+    {
+      "cellId": "haiku45-null",
+      "estimatedUsd": 0.0599025,
+      "itemCount": 28,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "53b498e6bc45cc7300648e8d76d6913c06b78e8f60af9e6e74583dbccdf47285",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "mcp-tool-selection",
+      "suiteSpecHash": "9981576c3de053b288089f31c2736f96c7c5ed76a370bf1b17840c51fb4841e8"
+    },
+    {
+      "cellId": "haiku45",
+      "estimatedUsd": 0.039113999999999996,
+      "itemCount": 26,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "b7fc377604136270695b222744ae2fd2e75a126274ee716b316dfc9f7c8e53d8",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "output-contract",
+      "suiteSpecHash": "39fd16e94091f67eb9c4c5d4487a4503f3c42a6d0792e0e37ed0c60c6b1c4852"
+    },
+    {
+      "cellId": "sonnet5",
+      "estimatedUsd": 0.07822799999999999,
+      "itemCount": 26,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-sonnet-5",
+      "presentationHash": "b7fc377604136270695b222744ae2fd2e75a126274ee716b316dfc9f7c8e53d8",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "output-contract",
+      "suiteSpecHash": "39fd16e94091f67eb9c4c5d4487a4503f3c42a6d0792e0e37ed0c60c6b1c4852"
+    },
+    {
+      "cellId": "haiku45-null",
+      "estimatedUsd": 0.039113999999999996,
+      "itemCount": 26,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "b7fc377604136270695b222744ae2fd2e75a126274ee716b316dfc9f7c8e53d8",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "output-contract",
+      "suiteSpecHash": "39fd16e94091f67eb9c4c5d4487a4503f3c42a6d0792e0e37ed0c60c6b1c4852"
+    },
+    {
+      "cellId": "haiku45",
+      "estimatedUsd": 0.033624,
+      "itemCount": 22,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "d96fccb7c68a6dba1ded7ce80366f230e2e800d5d269dfa02cf6268ec5bc28e8",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "routing-adherence",
+      "suiteSpecHash": "e5e7d1612cb8924bcfd5794912aee7336ff08f12e2b32f68e20bf2d879495974"
+    },
+    {
+      "cellId": "sonnet5",
+      "estimatedUsd": 0.067248,
+      "itemCount": 22,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-sonnet-5",
+      "presentationHash": "d96fccb7c68a6dba1ded7ce80366f230e2e800d5d269dfa02cf6268ec5bc28e8",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "routing-adherence",
+      "suiteSpecHash": "e5e7d1612cb8924bcfd5794912aee7336ff08f12e2b32f68e20bf2d879495974"
+    },
+    {
+      "cellId": "haiku45-null",
+      "estimatedUsd": 0.033624,
+      "itemCount": 22,
+      "k": 3,
+      "mode": "batch",
+      "modelIdRequested": "claude-haiku-4-5",
+      "presentationHash": "d96fccb7c68a6dba1ded7ce80366f230e2e800d5d269dfa02cf6268ec5bc28e8",
+      "samplingPolicyHash": "ddbbf24212f26dc4e0e5156425ebd0a7d4196bf3620051147f749d864fb9db98",
+      "suiteId": "routing-adherence",
+      "suiteSpecHash": "e5e7d1612cb8924bcfd5794912aee7336ff08f12e2b32f68e20bf2d879495974"
+    }
+  ],
+  "createdAt": "2026-08-10T04:28:29.032Z",
+  "formatVersion": 1,
+  "monthToDateUsdAtPlan": 0,
+  "pricingManifestId": "pricing.2026-08-08",
+  "runGroupId": "rg-20260810-1",
+  "totalEstimatedUsd": 0.7983779999999999
+}

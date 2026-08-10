@@ -1,0 +1,14 @@
+[
+  {
+    "at": "2026-08-10T04:28:29.036Z",
+    "cells": [],
+    "costUsd": 0,
+    "harnessCommit": "d3ec4411c75ad4fd15415e475d1f9b2b80ae7720",
+    "hash": "sha256:0e746053831812a42dbfb5ad4b1efec8a6dfbf61b5ff31b62960197985a9fb35",
+    "prevHash": null,
+    "reason": "ANTHROPIC_API_KEY not set",
+    "runGroupId": "rg-20260810-1",
+    "runnerBehaviorVersion": 1,
+    "status": "skipped"
+  }
+]
