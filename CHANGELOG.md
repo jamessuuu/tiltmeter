@@ -5,6 +5,85 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: se
 
 ## [Unreleased]
 
+### Fixed
+- **2026-08-15 verification pass: `health.yml` could not run on any trigger —
+  GitHub silently rejected the whole workflow file, unnoticed for 7 days on the
+  live public repo.** This session's actual task (M4-M6 per SPEC) turned out to
+  already be done: `git log`/CHANGELOG showed M0-M8 shipped, committed, and
+  already pushed to a public `jamessuuu/tiltmeter` (confirmed via the GitHub API
+  — `private: false`, live since 2026-08-08). The remaining work was verifying
+  that claim for real rather than repeating it. Doing so found this: `gh run list
+  --workflow health.yml` showed 7/7 recorded runs (every one mislabeled event
+  `push`, despite the workflow declaring only `schedule` + `workflow_dispatch`)
+  failing in 0s with 0 jobs and GitHub's generic "workflow file issue" message;
+  the Actions API also silently fell back to the file *path* as the workflow's
+  display name instead of its declared `name: health` — the tell that GitHub's
+  own parser, not just a strict local one, was rejecting the file. `js-yaml`
+  (already a dependency — the same library `workflow-lint.ts` uses) reproduced
+  the exact failure locally: the staleness-issue step's
+  `gh issue create --body "$(cat <<'EOF' … EOF)"` heredoc's body and closing
+  delimiter sit at column 0, below the indentation the `run: |` block scalar
+  established from its earlier lines, so YAML terminates the block there and
+  fails to parse everything after. Confirmed structural, not a typo: a
+  non-dash heredoc's terminator must be column 0 (an indented one is never
+  recognized — checked empirically), `<<-'EOF'` only strips *leading tabs*
+  (never spaces, so it can't rescue an indented terminator), and YAML forbids
+  tabs in indentation outright, even purely inside a block scalar (also checked
+  empirically) — a heredoc this deeply nested can never be both YAML-valid and
+  bash-valid. Fixed by building the issue body with `printf '%s\n'` over quoted
+  literal lines instead — every line individually and validly indented, no
+  terminator to match because there is no heredoc. Verified both ways: `js-yaml`
+  parses the real file clean (`name` now reads back as `"health"`), and a
+  mocked-`gh` run of the extracted script produces the identical body text with
+  the same control flow. Separately dropped two stray `\` escapes in front of
+  the body's backticks that survived from the old heredoc — harmless there
+  (a quoted heredoc never expands anyway) but meaningless here, and would have
+  rendered as literal backslashes in the filed issue.
+
+  Not fixed, flagged instead: `lint-workflow-secrets.mjs` parses every workflow
+  file with this same `js-yaml` yet did not catch this — `findWorkflowSecretViolations`
+  swallows a parse failure and reports zero violations by design, on the stated
+  assumption that "a workflow that doesn't even parse is a CI failure somewhere
+  else." That assumption doesn't hold in this repo: nothing else in `ci.yml`
+  validates workflow YAML structurally, so the only real enforcement was GitHub
+  itself, silently, in production, for 7 days. A `pnpm lint`-stage check that
+  every `.github/workflows/*.yml` parses would have caught this before it ever
+  reached `main`; left for a future session rather than expanding this session's
+  scope past the concrete, verified bug.
+
+- **2026-08-15: the observatory's first-ever real run group — a `skipped` record,
+  because no `ANTHROPIC_API_KEY` is configured yet — 404'd `/readings/none-yet`
+  and broke 2 e2e tests.** `rg-20260810-1` (`reading.yml`'s actual first scheduled
+  run, live on GitHub since 2026-08-10; pulled into this clone via `git fetch` +
+  fast-forward merge as part of this session's verification, since local `main`
+  was one commit behind) is a real directory under `observatory/readings/`
+  holding only `plan.json` — zero `<suiteId>__<cellId>.json` reading files, by
+  design, since the run spent nothing and committed an honest `status: "skipped"`
+  record (SPEC §9's "exits before spending, writes skipped with reason, commits").
+  `apps/web/lib/observatory.ts`'s `listRunGroupIds()` listed it anyway (a bare
+  `readdirSync` over directory presence), so `app/readings/[runGroupId]/page.tsx`'s
+  `generateStaticParams` stopped emitting the `none-yet` placeholder the moment
+  *any* directory existed. Reproduced locally — both `every-page.spec.ts`
+  assertions on `/readings/none-yet` failed, one on a literal 404 — and this was
+  never hypothetical: the bot's commit is already on the real `main` branch, so
+  the next ordinary push there was going to hit `ci.yml`'s `e2e-smoke` stage the
+  same way. `core/health.ts`'s `newestRealReadingAt` already solved the identical
+  problem for the dead-man banner (filters the index chain on `cells.length > 0`);
+  this was the same rule not yet applied on the readings-route side. Fixed by
+  teaching `listRunGroupIds()` — and `loadReadingsForRunGroup`, de-duplicated
+  onto the same `isReadingFile` predicate — to count a run group as real only
+  when its directory holds at least one actual reading file, not merely exists.
+  Verified: the full e2e suite (22/22) passes again, including both
+  previously-failing assertions, with the real `rg-20260810-1` skipped entry
+  present in the tree — not a fixture standing in for it. Full local
+  re-verification after both fixes: typecheck, lint, `pnpm test` (423/423,
+  unit+eval), e2e (22/22), `calibration:check`, `suite-lint`, `brand`/`diagram`
+  drift, `ci:pack-check`, and `lint-workflow-secrets` all green; a repo-wide grep
+  sweep for the real-world employer/client identifiers named in `10218a4`'s
+  commit message stayed at zero hits throughout (that world-abstraction itself
+  untouched by this pass — deliberately not naming those identifiers again here,
+  in the committed tree, even as a this-was-checked-for note).
+
 ### Added
 - Design/documentation pass (DESIGN-DIRECTION.md, after M8): `scripts/diagram.mjs` — a deterministic,
   CI-drift-checked (`pnpm diagram`, next to `brand-drift`) generator for the axis-tuple mechanism diagram,

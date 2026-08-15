@@ -59,22 +59,30 @@ jobs:
             exit 0
           fi
 
+          # Built via printf, not a heredoc: a heredoc's closing delimiter must sit
+          # at column 0, which silently breaks the YAML block scalar this step lives
+          # in (every line here needs the run block's indentation to stay part of
+          # it) -- confirmed live: this is why every past run of this step, on any
+          # trigger, failed instantly with zero jobs ("workflow file issue"), and
+          # why GitHub fell back to the file path instead of the `name: health`
+          # declared above. js-yaml -- same parser this repo already depends on --
+          # reproduces the exact failure on the old form and parses this form clean.
+          BODY=$(printf '%s\n' \
+            'The newest entry in `observatory/readings/index.json` that actually' \
+            'produced a reading (not a `skipped` mitigation commit) is more than 14' \
+            'days old (SPEC §8/§14 M7).' \
+            '' \
+            '**Likely causes:** `reading.yml` has been failing silently red without' \
+            'anyone noticing, `ANTHROPIC_API_KEY` expired or was removed from repo' \
+            'secrets, or the console workspace spend limit was hit and every recent' \
+            'week recorded a cap-reached skip (see `docs/OPERATIONS.md`).' \
+            '' \
+            'Check recent runs of the `reading` workflow, then close this issue once a' \
+            'real reading lands — it will not reopen itself; the next stale day (if the' \
+            'underlying cause is not fixed) files a fresh one only if this one has been' \
+            'closed.')
+
           gh issue create \
             --title "Observatory stale: newest reading is more than 14 days old" \
             --label observatory-stale \
-            --body "$(cat <<'EOF'
-The newest entry in \`observatory/readings/index.json\` that actually
-produced a reading (not a \`skipped\` mitigation commit) is more than 14
-days old (SPEC §8/§14 M7).
-
-**Likely causes:** \`reading.yml\` has been failing silently red without
-anyone noticing, \`ANTHROPIC_API_KEY\` expired or was removed from repo
-secrets, or the console workspace spend limit was hit and every recent
-week recorded a cap-reached skip (see \`docs/OPERATIONS.md\`).
-
-Check the \`reading\` workflow's recent runs, then close this issue once a
-real reading lands — it will not reopen itself; the next stale day (if the
-underlying cause is not fixed) files a fresh one only if this one has been
-closed.
-EOF
-)"
+            --body "$BODY"

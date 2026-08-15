@@ -77,12 +77,31 @@ export function loadPricingManifest(): PricingManifest {
   return parsePricingManifest(readJson(`pricing/${only}`));
 }
 
+/** A committed JSON file under a run group directory that is an actual per-cell reading — excludes the run group's own metadata files (`run.json`, `plan.json`), which are written even for a `skipped`/`aborted` run group that landed zero real readings (SPEC §9: "API key missing/invalid… writes skipped with reason, commits"). */
+function isReadingFile(fileName: string): boolean {
+  return fileName.endsWith(".json") && fileName !== "run.json" && fileName !== "plan.json";
+}
+
+/**
+ * Run group ids that have at least one real reading — a bare `readdirSync`
+ * would also return a `skipped`/`aborted` run group's directory (it exists
+ * and holds `plan.json`, sometimes `run.json`, but zero `<suiteId>__<cellId>.json`
+ * files), which the readings route's placeholder logic treats as "a real run
+ * group landed" and stops generating `/readings/none-yet` — a 404 for a
+ * repo whose first-ever committed run group is an honest `skipped` record
+ * (exactly what a fresh clone with no `ANTHROPIC_API_KEY` produces; verified
+ * live against `rg-20260810-1`, this repo's actual first commit of that
+ * shape). Mirrors `core/health.ts`'s `newestRealReadingAt`, which filters the
+ * index chain by `cells.length > 0` for the same reason on the dead-man
+ * banner's side — this is the readings-route side of that same rule.
+ */
 export function listRunGroupIds(): string[] {
   const dir = join(OBSERVATORY_DIR, "readings");
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
+    .filter((name) => readdirSync(join(dir, name)).some(isReadingFile))
     .sort();
 }
 
@@ -96,7 +115,7 @@ export function loadReadingsForRunGroup(runGroupId: string): Reading[] {
   const dir = join(OBSERVATORY_DIR, "readings", runGroupId);
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
-    .filter((f) => f.endsWith(".json") && f !== "run.json" && f !== "plan.json")
+    .filter(isReadingFile)
     .map((f) => parseReading(JSON.parse(readFileSync(join(dir, f), "utf8"))));
 }
 
