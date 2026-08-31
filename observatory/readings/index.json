@@ -34,5 +34,17 @@
     "runGroupId": "rg-20260824-1",
     "runnerBehaviorVersion": 1,
     "status": "skipped"
+  },
+  {
+    "at": "2026-08-31T09:20:03.593Z",
+    "cells": [],
+    "costUsd": 0,
+    "harnessCommit": "b36be9e9411e0f423f02de849a9c827481e173e9",
+    "hash": "sha256:d45759f34cdae17ad7760ba6ed6ac78326903469c36308e6237b454ba06bb952",
+    "prevHash": "sha256:a96569107e94ded377108a93619010efcc75181627e8b1197ff7faba730c669d",
+    "reason": "ANTHROPIC_API_KEY not set",
+    "runGroupId": "rg-20260831-1",
+    "runnerBehaviorVersion": 1,
+    "status": "skipped"
   }
 ]
