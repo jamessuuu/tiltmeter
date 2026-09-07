@@ -12,7 +12,21 @@ test.describe("/ with JavaScript disabled", () => {
 
   test("still renders the title, tagline, and the honest launch-state copy", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toHaveText("tiltmeter");
+    // The h1 is the CLAIM, not the wordmark (changed 2026-09-07). This
+    // assertion used to read toHaveText("tiltmeter"), which pinned the
+    // document's only h1 to a 14px masthead label while the 68px sentence a
+    // sighted visitor reads as the headline was a <p> — so the visual
+    // hierarchy and the document outline disagreed, and a screen-reader user
+    // navigating by heading met the project name instead of what the page
+    // proves. Every sibling route already owned a real heading; only "/" did
+    // not. The test's intent was always "this is real server-rendered HTML",
+    // which it still checks — now against the heading that deserves to be one.
+    await expect(page.locator("h1")).toHaveText(
+      "The detector fires when your harness moves, and not when it doesn't.",
+    );
+    // The wordmark still renders, in the masthead and the hero eyebrow, as a
+    // label rather than a heading.
+    await expect(page.locator("header").getByText("tiltmeter")).toBeVisible();
     const launchState = page.getByTestId("launch-state");
     await expect(launchState).toContainText("tiltmeter launched");
     await expect(launchState).toContainText("pre-registered suites");

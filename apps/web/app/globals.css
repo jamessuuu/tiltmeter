@@ -333,8 +333,36 @@ summary::-webkit-details-marker {
   }
 }
 
-/* Motion here is decoration, so it goes away entirely when asked. */
+/* Motion here is decoration, so it goes away entirely when asked.
+ *
+ * The catch-all below is load-bearing and NOT redundant with the specific
+ * rules that follow it. Tailwind's `transition-*` utilities emit their
+ * transition-property/duration pair unconditionally and are not wrapped in
+ * this media query, so a block that only names its own selectors cannot
+ * reach them: a single `transition-transform` on the disclosure caret
+ * survived at 150ms, measured in a real browser with reducedMotion set,
+ * while all 38 keyframe animations correctly went to zero. Hand-authored
+ * CSS in sibling projects reaches 0/0; this is a framework gap, and the
+ * override has to be specific enough to beat a utility class.
+ *
+ * 0.001s rather than `none` or `0s`, deliberately: anything awaiting a
+ * `transitionend` / `animationend` event still receives it instead of
+ * hanging forever on a listener that will never fire.
+ *
+ * Verified by rendering (tools/screens/motion-probe.mjs), not by reading
+ * this file — it walks every element on all six routes and counts computed
+ * durations at or above a 20ms perceptibility floor.
+ */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+    scroll-behavior: auto !important;
+  }
+
   .rise,
   .meter-fill {
     animation: none;

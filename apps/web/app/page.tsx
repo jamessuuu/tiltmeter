@@ -42,17 +42,17 @@ export default function HomePage() {
       <div className="ambient border-b hairline">
         <div className="mx-auto max-w-5xl px-6 pb-16 pt-14 sm:pt-20">
           <div className="flex items-center gap-3 rise">
-            <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-ink/55">tiltmeter</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ink/55">tiltmeter</p>
             <span className="h-px flex-1 bg-rule" aria-hidden="true" />
             <span className="font-mono text-[11px] text-ink/45">pre-release · {LAUNCH_DATE}</span>
           </div>
 
           <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] lg:gap-14">
             <div>
-              <p className="max-w-[17ch] text-[42px] font-semibold leading-[1.03] tracking-[-0.035em] sm:text-6xl lg:text-[68px] rise rise-2">
+              <h1 className="max-w-[17ch] text-[42px] font-semibold leading-[1.03] tracking-[-0.035em] sm:text-6xl lg:text-[68px] rise rise-2">
                 The detector fires when your harness moves, and{" "}
                 <span className="text-amber">not when it doesn&apos;t</span>.
-              </p>
+              </h1>
 
               <p
                 className="mt-7 max-w-[56ch] text-[19px] leading-[1.55] text-ink/75 rise rise-2"
