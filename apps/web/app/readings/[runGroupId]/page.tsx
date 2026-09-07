@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { listRunGroupIds, loadReadingsForRunGroup } from "@/lib/observatory";
 import { shortHash } from "@/lib/instrument";
@@ -29,12 +30,50 @@ export default async function ReadingPage({ params }: { params: Promise<{ runGro
 
   if (ids.length === 0 && runGroupId === EMPTY_PLACEHOLDER_ID) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold tracking-tight">Readings</h1>
-        <p className="mt-4 text-ink/70 max-w-prose" data-testid="no-run-groups-yet">
-          No run group has been recorded yet. The first run group spends real API budget and is a deliberate,
-          James-gated step — see <code>observatory/readings/README.md</code>. Once one lands, it appears here.
-        </p>
+      <main>
+        <div className="ambient border-b hairline">
+          <div className="mx-auto max-w-5xl px-6 pb-12 pt-14">
+            <div className="flex items-center gap-3 rise">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/50">
+                Readings
+              </span>
+              <span className="h-px flex-1 bg-rule" aria-hidden="true" />
+              <span className="font-mono text-[11px] text-ink/45">none taken</span>
+            </div>
+            <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl rise rise-2">
+              Readings
+            </h1>
+            <p
+              className="mt-5 max-w-[58ch] text-[19px] leading-[1.5] text-ink/80 rise rise-2"
+              data-testid="no-run-groups-yet"
+              style={{ fontFamily: "var(--font-editorial)" }}
+            >
+              No run group has been recorded yet. The first run group spends real API budget and is a
+              deliberate, James-gated step — see <code>observatory/readings/README.md</code>. Once one lands,
+              it appears here.
+            </p>
+          </div>
+        </div>
+        <div className="mx-auto max-w-5xl px-6 pb-24">
+          <div className="panel mt-12 p-6 sm:p-7">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+              What has happened instead
+            </h2>
+            <p className="mt-3 max-w-[66ch] text-[15px] leading-relaxed text-ink/70">
+              The schedule has still been running. Every week it commits a record of what it did — so far,
+              that it refused, and why — hash-linked to the one before it. That chain is on the{" "}
+              <Link
+                href="/"
+                prefetch={false}
+                className="underline decoration-rule underline-offset-4 hover:text-amber"
+              >
+                landing page
+              </Link>
+              , alongside the calibration the detector had to clear before any reading would be worth
+              publishing.
+            </p>
+          </div>
+        </div>
       </main>
     );
   }
