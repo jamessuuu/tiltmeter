@@ -18,7 +18,7 @@ model alone.
 > the calibrated classifier, the real Anthropic client (batch + sync + cost
 > planning + caps), the observatory's own data (4 pre-registered launch
 > suites, 108 items, the panel, the pricing manifest, cited model release
-> dates), the static site (`apps/web` — 6 routes, `output: "export"`, 21
+> dates), the static site (`apps/web` — 6 routes, `output: "export"`, 22
 > Playwright e2e tests against the real build), the three scheduled
 > workflows (`reading.yml`/`release-watch.yml`/`health.yml`), and
 > `tiltmeter init` (scaffolds a suite from real artifacts — this package
@@ -165,7 +165,7 @@ capability leaderboard, which is exactly what this project refuses to be
 `observatory/` (James's own instance — suites, presentations, readings) is
 data and config only, zero code, so a fork replaces it and keeps everything
 else (docs/SPEC.md §2). `apps/web` is the static site (Next.js 16.3.0 App
-Router, `output: "export"`) — built and tested (`pnpm e2e` from root, 21
+Router, `output: "export"`) — built and tested (`pnpm e2e` from root, 22
 Playwright tests against the real static export), deployed at
 [tiltmeter.vercel.app](https://tiltmeter.vercel.app).
 
@@ -267,7 +267,7 @@ before commit — see `routing-adherence`'s `docs` field).
 | M3 | Statistics: seeded paired bootstrap, MDE, per-metric verdicts, calibration sims | done |
 | M4 | Real client: Messages + Batch + `count_tokens`, pricing manifest, caps, `custom_id`/`--resume`, `tiltmeter plan`/`run` | done |
 | M5 | Observatory: 4 launch suites (108 items, real artifacts, cited provenance), `panel.json`, `models.json`, `tiltmeter lint`, the real `tiltmeter verify` git pre-registration walk | done |
-| M6 | The site: 6 routes, static export, dead-man banner, brand + OG, 21 Playwright e2e tests | done |
+| M6 | The site: 6 routes, static export, dead-man banner, brand + OG, 22 Playwright e2e tests | done |
 | M7 | Workflows: `reading.yml` (weekly + skipped-record commits), `release-watch.yml` (PR-gated model additions), `health.yml`, `docs/OPERATIONS.md`, the workflow-secret-boundary lint stage | done — none ever executed |
 | M8 | `tiltmeter init` (scaffolding), the tarball smoke test, `release.yml`, version → `1.0.0-rc.1` | done — never published or tagged |
 | — | Design pass: the attribution diagram, the demo recording, the evidence-dense landing page, `/docs` | done |

@@ -13,19 +13,19 @@ import Link from "next/link";
 export function Header() {
   return (
     <header className="border-b hairline">
-      <div className="mx-auto max-w-3xl px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="mx-auto max-w-5xl px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <Link href="/" className="flex items-center gap-2 shrink-0 group">
-          <Image src="/brand/glyph.svg" alt="" aria-hidden="true" width={24} height={24} priority />
+          <Image src="/brand/glyph.svg" alt="tiltmeter" width={24} height={24} priority />
           <span className="text-lg font-semibold tracking-tight group-hover:text-amber">tiltmeter</span>
         </Link>
         <nav aria-label="primary" className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <Link href="/models" className="hover:text-amber">
+          <Link href="/models" prefetch={false} className="inline-flex items-center py-1 hover:text-amber">
             models
           </Link>
-          <Link href="/methodology" className="hover:text-amber">
+          <Link href="/methodology" prefetch={false} className="inline-flex items-center py-1 hover:text-amber">
             methodology
           </Link>
-          <Link href="/docs" className="hover:text-amber">
+          <Link href="/docs" prefetch={false} className="inline-flex items-center py-1 hover:text-amber">
             docs
           </Link>
         </nav>

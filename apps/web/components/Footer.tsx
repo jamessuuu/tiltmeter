@@ -13,10 +13,13 @@ import { Attribution } from "./Attribution";
 export function Footer() {
   return (
     <footer className="border-t hairline mt-16 py-8 px-6 text-sm text-ink/70">
-      <div className="mx-auto max-w-3xl flex flex-wrap items-center gap-3">
+      <div className="mx-auto max-w-5xl flex flex-wrap items-center gap-3">
         <Attribution linkClassName="hover:text-amber" />
         <span aria-hidden="true">·</span>
-        <a href="https://github.com/jamessuuu/tiltmeter" className="underline hover:text-amber">
+        <a
+          href="https://github.com/jamessuuu/tiltmeter"
+          className="inline-flex items-center py-1 underline hover:text-amber"
+        >
           github.com/jamessuuu/tiltmeter
         </a>
       </div>

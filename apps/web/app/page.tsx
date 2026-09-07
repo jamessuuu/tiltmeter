@@ -1,18 +1,25 @@
-import { Fragment } from "react";
 import Link from "next/link";
-import { activeItems, meetsNegativesQuota, suiteSpecHash } from "tiltmeter";
-import { loadAllSuites, loadAllReadings, totalActiveItemCount } from "@/lib/observatory";
-import { buildSeriesByCellId, shortHash } from "@/lib/instrument";
+import { activeItems } from "tiltmeter";
+import { loadAllSuites, loadAllReadings, totalActiveItemCount, loadPricingManifest } from "@/lib/observatory";
 import { newestReadingTimestamp } from "@/lib/dead-man";
-import { loadCalibration, formatPct } from "@/lib/calibration";
+import { loadCalibration } from "@/lib/calibration";
 import { LAUNCH_DATE } from "@/lib/constants";
+import { loadRunGroupRecords } from "@/lib/watch";
 import { DeadManBanner } from "@/components/DeadManBanner";
 import { AttributionDiagram } from "@/components/AttributionDiagram";
 import { DemoVideo } from "@/components/DemoVideo";
+import { CalibrationGates, CalibrationReadout } from "@/components/CalibrationGates";
+import { WatchChain } from "@/components/WatchChain";
+import { SuiteGrid } from "@/components/SuiteGrid";
 
 // SPEC §7: every route statically prerendered — Next.js itself refuses to
 // build this page if anything makes it dynamic.
 export const dynamic = "error";
+
+/** Deterministic thousands grouping — no locale, no ICU variance. */
+function group(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 export default function HomePage() {
   const suites = loadAllSuites();
@@ -20,212 +27,204 @@ export default function HomePage() {
   const newestReadingIso = newestReadingTimestamp(allReadings);
   const itemCount = totalActiveItemCount();
   const calibration = loadCalibration();
+  const records = loadRunGroupRecords();
+  const pricing = loadPricingManifest();
 
   const allActiveItems = suites.flatMap((suite) => activeItems(suite));
   const negativeCount = allActiveItems.filter((item) => item.polarity === "negative").length;
   const negativePct = allActiveItems.length > 0 ? ((negativeCount / allActiveItems.length) * 100).toFixed(1) : "0.0";
+  const totalTrials = calibration.falsePositive.trials + calibration.detectionPower.trials;
+  const resamples = totalTrials * calibration.bootstrapB;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      {/* ---- hero: name, one-line claim, the two calibration numbers ---- */}
-      {/* The header (added 2026-08-09, see components/Header.tsx) now carries
-       * the glyph + wordmark as the home link on every page, so the hero no
-       * longer repeats it here — one identity mark per page, not two stacked
-       * on top of each other. */}
-      <h1 className="text-3xl font-semibold tracking-tight">tiltmeter</h1>
-      <p className="mt-2 text-ink/70 max-w-prose">
-        Tells an operator when a new model release moves <em>their</em> agent harness off true — a harness
-        artifact, pinned to a commit, probed with deterministic scorers. Every published number is scoped to
-        (suite, harness commit, model), never to a model alone.
-      </p>
-
-      <DeadManBanner newestReadingIso={newestReadingIso} />
-
-      <div className="mt-8 grid grid-cols-2 gap-6 max-w-md border-t hairline pt-6" data-testid="calibration-numbers">
-        <div>
-          <div className="text-4xl font-semibold tabular-nums">{formatPct(calibration.falsePositive.rate)}</div>
-          <div className="mt-1 text-xs text-ink/60">
-            false-positive rate — {calibration.falsePositive.trials} null pairs
+    <main>
+      {/* ================================================== hero ========== */}
+      <div className="ambient border-b hairline">
+        <div className="mx-auto max-w-5xl px-6 pb-16 pt-14 sm:pt-20">
+          <div className="flex items-center gap-3 rise">
+            <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-ink/55">tiltmeter</h1>
+            <span className="h-px flex-1 bg-rule" aria-hidden="true" />
+            <span className="font-mono text-[11px] text-ink/45">pre-release · {LAUNCH_DATE}</span>
           </div>
-        </div>
-        <div>
-          <div className="text-4xl font-semibold tabular-nums text-amber">
-            {formatPct(calibration.detectionPower.rate)}
-          </div>
-          <div className="mt-1 text-xs text-ink/60">
-            detection power — {calibration.detectionPower.trials} planted degradations
+
+          <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] lg:gap-14">
+            <div>
+              <p className="max-w-[17ch] text-[42px] font-semibold leading-[1.03] tracking-[-0.035em] sm:text-6xl lg:text-[68px] rise rise-2">
+                The detector fires when your harness moves, and{" "}
+                <span className="text-amber">not when it doesn&apos;t</span>.
+              </p>
+
+              <p
+                className="mt-7 max-w-[56ch] text-[19px] leading-[1.55] text-ink/75 rise rise-2"
+                style={{ fontFamily: "var(--font-editorial)" }}
+              >
+                A model release either changed how your skill descriptions, tool schemas and output
+                contracts behave, or it didn&apos;t. Both answers are only worth having from an instrument
+                whose error rates are known — so those were measured first, before a single reading was
+                taken.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-2 rise rise-3">
+                {[
+                  `${group(totalTrials)} seeded trials`,
+                  `B = ${group(calibration.bootstrapB)} resamples each`,
+                  `${String(calibration.itemCount)}-item pool`,
+                  `${String(calibration.degradedCount)} planted`,
+                  "pnpm calibration",
+                  "$0",
+                ].map((chip) => (
+                  <span
+                    key={chip}
+                    className="well px-3 py-1.5 font-mono text-[11.5px] tracking-tight text-ink/65"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="rise rise-4">
+              <CalibrationReadout calibration={calibration} />
+            </div>
           </div>
         </div>
       </div>
-      <p className="mt-3 text-xs text-ink/50 max-w-prose">
-        Both numbers come from a seeded simulation (<code>pnpm calibration</code>), not a threshold picked by
-        eye — CI regenerates them on every push and fails on drift. Detail on{" "}
-        <Link href="/methodology" className="underline hover:text-amber">
-          methodology
-        </Link>
-        .
-      </p>
 
-      {/* ---- the diagram: the one idea that explains faster than prose ---- */}
-      <section className="mt-12 border-t hairline pt-8" aria-labelledby="diagram-heading">
-        <h2 id="diagram-heading" className="font-semibold">
-          How a comparison resolves
-        </h2>
-        <p className="mt-2 text-sm text-ink/70 max-w-prose">
-          A cell&apos;s identity is five hashes: which suite, which model, which runner behavior, which
-          presentation, which sampling policy. Two readings are only compared when exactly one of those five
-          changed — that is the only shape of question this project will answer.
-        </p>
-        <AttributionDiagram />
-      </section>
+      <div className="mx-auto max-w-5xl px-6 pb-24">
+        <DeadManBanner newestReadingIso={newestReadingIso} />
 
-      {/* ---- the demo: a scripted run against the real deployed site ---- */}
-      <section className="mt-12 border-t hairline pt-8" aria-labelledby="demo-heading">
-        <h2 id="demo-heading" className="font-semibold">
-          See it run
-        </h2>
-        <p className="mt-2 text-sm text-ink/70 max-w-prose">
-          Recorded against this site as deployed, not a local build — if the site were broken, the recording
-          would be too.
-        </p>
-        <DemoVideo />
-      </section>
-
-      {/* ---- the pre-registration argument ---- */}
-      <section className="mt-12 border-t hairline pt-8" aria-labelledby="prereg-heading">
-        <h2 id="prereg-heading" className="font-semibold">
-          Pre-registered, not fitted after the fact
-        </h2>
-        <p className="mt-2 text-sm text-ink/70 max-w-prose">
-          The four suites below were committed to this repo on {LAUNCH_DATE}, before any reading has ever been
-          taken and before whatever model release eventually moves one of them exists. Git history is the
-          proof — a suite&apos;s registration date and a model&apos;s cited release date are both public and
-          both checkable, so nobody has to take &quot;pre-registered&quot; on faith.
-        </p>
-        <pre className="mt-4 border hairline bg-white/40 p-3 text-sm overflow-x-auto">
-          <code>npx tiltmeter@1 verify</code>
-        </pre>
-        <p className="mt-2 text-sm text-ink/70 max-w-prose">
-          For each reading it recomputes <code>suiteSpecHash</code> from the suite file, walks git history for
-          the first commit whose tree contains that hash, reads the model&apos;s cited release date, and
-          asserts the suite was registered first — printing the commit SHA and both dates. The git history is
-          the actual proof; the command just makes checking it a 30-second job instead of an afternoon.
-        </p>
-      </section>
-
-      {/* ---- suite inventory + today's (empty) series ---- */}
-      <section className="mt-12 border-t hairline pt-8" aria-labelledby="suites-heading">
-        <h2 id="suites-heading" className="font-semibold">
-          The four launch suites
-        </h2>
-        <p className="mt-2 text-sm text-ink/70 max-w-prose">
-          {itemCount} active items across {suites.length} suites, {negativeCount} of them ({negativePct}%)
-          negative — a suite that only ever tests the happy path cannot tell you when it starts firing on
-          everything.
-        </p>
-
-        <div className="mt-8 space-y-8">
-          {suites.map((suite) => {
-            const suiteReadings = allReadings.filter((r) => r.suiteId === suite.id);
-            const seriesByCellId = buildSeriesByCellId(suiteReadings);
-            const active = activeItems(suite);
-            const negatives = active.filter((i) => i.polarity === "negative").length;
-
-            return (
-              <section key={suite.id} className="border-t hairline pt-6" data-testid={`suite-${suite.id}`}>
-                <h3 className="font-semibold">
-                  <Link href={`/suites/${suite.id}`} className="hover:text-amber">
-                    {suite.id}
-                  </Link>
-                </h3>
-                <p className="text-sm text-ink/60 mt-1">
-                  {active.length} active items ({negatives} negative,{" "}
-                  {meetsNegativesQuota(suite) ? "quota met" : "quota NOT met"}) · current suiteSpecHash{" "}
-                  <code className="font-mono">{shortHash(suiteSpecHash(suite))}</code>
-                </p>
-
-                {seriesByCellId.size === 0 ? (
-                  <p className="text-sm text-ink/60 mt-3">No readings for this suite yet.</p>
-                ) : (
-                  <div className="mt-3 space-y-4">
-                    {[...seriesByCellId.entries()].map(([cellId, points]) => (
-                      <div key={cellId}>
-                        <h4 className="text-sm font-medium">{cellId}</h4>
-                        <table className="mt-1 text-sm w-full border-collapse">
-                          <thead>
-                            <tr className="text-left text-ink/60">
-                              <th className="pr-4 font-normal">Run group</th>
-                              <th className="pr-4 font-normal">Status</th>
-                              <th className="pr-4 font-normal">Overall</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {points.map((p) => (
-                              <Fragment key={p.runGroupId}>
-                                {p.hardBreakBefore ? (
-                                  <tr key={`${p.runGroupId}-break`}>
-                                    <td colSpan={3} className="text-amber text-xs py-1">
-                                      suite rebaselined — series restarts
-                                    </td>
-                                  </tr>
-                                ) : null}
-                                <tr key={p.runGroupId} className="border-t hairline">
-                                  <td className="pr-4 py-1">
-                                    <Link href={`/readings/${p.runGroupId}`} className="hover:text-amber">
-                                      {p.runGroupId}
-                                    </Link>
-                                  </td>
-                                  <td className="pr-4 py-1">{p.status}</td>
-                                  <td className="pr-4 py-1">
-                                    {p.metrics.overall !== undefined ? p.metrics.overall.toFixed(3) : "—"}
-                                  </td>
-                                </tr>
-                              </Fragment>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ---- the honest launch state ---- */}
-      {allReadings.length === 0 ? (
-        <section className="mt-12 border hairline p-5 bg-white/40" data-testid="launch-state">
-          <p>
-            tiltmeter launched {LAUNCH_DATE} with {suites.length} pre-registered suites and {itemCount} items.
-            There is no time series yet — that is what pre-registration means. The series starts here.
+        {/* ============================================ the two gates ====== */}
+        <section className="mt-14" aria-labelledby="gates-heading">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <h2 id="gates-heading" className="text-2xl font-semibold tracking-[-0.02em]">
+              Both calibration gates, cleared
+            </h2>
+            <Link
+              href="/methodology"
+              prefetch={false}
+              className="inline-flex items-center py-1 font-mono text-xs text-ink/55 underline decoration-rule underline-offset-4 hover:text-amber"
+            >
+              methodology →
+            </Link>
+          </div>
+          <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink/70">
+            A seeded simulation, re-run by CI on every push and failed on drift — never a threshold picked
+            by eye. {group(resamples)} bootstrap resamples in total.
           </p>
+          <div className="mt-8">
+            <CalibrationGates calibration={calibration} />
+          </div>
         </section>
-      ) : null}
 
-      {/* ---- install ---- */}
-      <section className="mt-12 border-t hairline pt-8" aria-labelledby="install-heading">
-        <h2 id="install-heading" className="font-semibold">
-          Install
-        </h2>
-        <p className="mt-2 text-sm text-ink/70 max-w-prose">
-          The first three commands below run with no API key and no network — proven against the packed npm
-          tarball in a clean directory, not just in this repo.
-        </p>
-        <pre className="mt-4 border hairline bg-white/40 p-3 text-sm overflow-x-auto">
-          <code>{`npx tiltmeter@1 init --from-skills <dir>
+        {/* ============================================ the watch ========= */}
+        <WatchChain records={records} />
+
+        {/* ============================================ mechanism ========= */}
+        <section className="mt-20" aria-labelledby="diagram-heading">
+          <h2 id="diagram-heading" className="text-2xl font-semibold tracking-[-0.02em]">
+            How a comparison resolves
+          </h2>
+          <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink/70">
+            A cell&apos;s identity is five hashes: suite, model, runner behavior, presentation, sampling
+            policy. Change exactly one and the comparison resolves to a verdict. Change two and it refuses,
+            naming the axes rather than guessing.
+          </p>
+          <div className="panel mt-8 p-4 sm:p-8">
+            <AttributionDiagram />
+          </div>
+        </section>
+
+        {/* ============================================ demo ============== */}
+        <section className="mt-20" aria-labelledby="demo-heading">
+          <h2 id="demo-heading" className="text-2xl font-semibold tracking-[-0.02em]">
+            See it run
+          </h2>
+          <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink/70">
+            Recorded against this site as deployed, not a local build — if the site were broken, the
+            recording would be too.
+          </p>
+          <div className="panel mt-8 p-4 sm:p-6">
+            <DemoVideo />
+          </div>
+        </section>
+
+        {/* ============================================ suites ============ */}
+        <section className="mt-20" aria-labelledby="suites-heading">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <h2 id="suites-heading" className="text-2xl font-semibold tracking-[-0.02em]">
+              The four launch suites
+            </h2>
+            <span className="font-mono text-xs tabular-nums text-ink/50">
+              {itemCount} items · {negativeCount} negative ({negativePct}%)
+            </span>
+          </div>
+          <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink/70">
+            Committed on {LAUNCH_DATE}, before any reading and before whatever release eventually moves one
+            of them exists. A suite that only ever tests the happy path cannot tell you when it starts
+            firing on everything — so every suite carries a negatives quota.
+          </p>
+
+          <SuiteGrid suites={suites} />
+
+          <details className="group mt-6">
+            <summary className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-amber">
+              <span className="font-mono text-xs transition-transform group-open:rotate-90">▸</span>
+              How pre-registration is checked, not claimed
+            </summary>
+            <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <p className="max-w-[62ch] text-[15px] leading-relaxed text-ink/70">
+                For each reading, <code className="font-mono text-[13px]">verify</code> recomputes{" "}
+                <code className="font-mono text-[13px]">suiteSpecHash</code> from the suite file, walks git
+                history for the first commit whose tree contains that hash, reads the model&apos;s cited
+                release date, and asserts the suite was registered first — printing the commit SHA and both
+                dates. Git history is the actual proof; the command just makes checking it a 30-second job.
+              </p>
+              <pre className="well overflow-x-auto p-4 font-mono text-[13px]">
+                <code>npx tiltmeter@1 verify</code>
+              </pre>
+            </div>
+          </details>
+        </section>
+
+        {/* ============================================ launch state ====== */}
+        {allReadings.length === 0 ? (
+          <section className="panel-float mt-20 p-7 sm:p-9" data-testid="launch-state">
+            <p className="max-w-[64ch] text-[17px] leading-relaxed">
+              tiltmeter launched {LAUNCH_DATE} with {suites.length} pre-registered suites and {itemCount}{" "}
+              items. There is no time series yet — that is what pre-registration means. The series starts
+              here.
+            </p>
+            <p className="mt-4 max-w-[64ch] text-sm text-ink/60">
+              The first run group spends real money and is a deliberate, gated step. Until it is taken, the
+              schedule keeps publishing what it did instead — {records.length} records so far, priced
+              against a pricing manifest fetched {pricing.fetchedAt}.
+            </p>
+          </section>
+        ) : null}
+
+        {/* ============================================ install =========== */}
+        <section className="mt-20" aria-labelledby="install-heading">
+          <h2 id="install-heading" className="text-2xl font-semibold tracking-[-0.02em]">
+            Install
+          </h2>
+          <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink/70">
+            The first three commands run with no API key and no network — proven against the packed npm
+            tarball in a clean directory, not just in this repo.
+          </p>
+          <pre className="well mt-6 overflow-x-auto p-5 font-mono text-[13px] leading-relaxed">
+            <code>{`npx tiltmeter@1 init --from-skills <dir>
 npx tiltmeter@1 lint
 npx tiltmeter@1 plan --run-group <id> --offline`}</code>
-        </pre>
-        <p className="mt-4 text-sm text-ink/70 max-w-prose">
-          Full walkthrough on{" "}
-          <Link href="/docs" className="underline hover:text-amber">
-            docs
-          </Link>
-          .
-        </p>
-      </section>
+          </pre>
+          <p className="mt-4 text-sm text-ink/65">
+            Full walkthrough on{" "}
+            <Link href="/docs" prefetch={false} className="underline decoration-rule underline-offset-4 hover:text-amber">
+              docs
+            </Link>
+            .
+          </p>
+        </section>
+      </div>
     </main>
   );
 }

@@ -61,6 +61,16 @@ export function loadPresentation(id: string): Presentation {
   return parsePresentation(readJson(`presentations/${id}.json`));
 }
 
+/** Every committed presentation id, sorted — so `/methodology` renders the templates that EXIST rather than a hand-written list of four that goes stale the moment a fifth lands. */
+export function listPresentationIds(): string[] {
+  const dir = join(OBSERVATORY_DIR, "presentations");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => f.replace(/\.json$/, ""))
+    .sort();
+}
+
 export function loadPanel(): Panel {
   return parsePanel(readJson("panel.json"));
 }

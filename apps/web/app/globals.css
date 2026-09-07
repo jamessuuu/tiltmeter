@@ -5,16 +5,112 @@
  * config in globals.css"). Palette from BRAND-KIT.md / agentjames'
  * docs/DESIGN.md, binding across the whole showcase program: PAPER
  * (background), INK (text/strokes), AMBER (the ONE signal color), RULE
- * (hairlines). 0-2px radius, no gradients, no glow, no dark chrome.
+ * (hairlines).
+ *
+ * PRODUCT SURFACE (2026-09-07, substrate.css §12). The previous version of
+ * this comment ended "0-2px radius, no gradients, no glow, no dark chrome",
+ * and applying that faithfully is exactly why this site rendered as a
+ * document rather than a product: every panel a sharp rectangle, depth
+ * reduced to a single hairline, motion nowhere. §12 supersedes it —
+ * real corners, an elevation ladder, one ambient wash tinted by the
+ * project's own signal hue, one easing curve, two durations. The palette
+ * is unchanged; nothing here introduces a second signal color.
+ *
+ * Every raw color literal in this file lives in the @theme block below.
+ * Everything past it composes var() tokens only.
  */
+/*
+ * Type (2026-09-07). This site rendered in `ui-sans-serif` + `ui-monospace`
+ * — two system stacks and no display face, which is why every heading on
+ * it looked like a heading in a README. These are the portfolio's own three
+ * faces, vendored as woff2 from ~/.claude/harness-dist/substrate/fonts (all
+ * OFL 1.1, subset to latin; licences and provenance in public/fonts/). Self-
+ * hosted on purpose: no build-time network fetch, no third-party request at
+ * runtime, and the static export stays reproducible offline.
+ *
+ * Three faces, three jobs: Archivo carries display and UI, Commit Mono
+ * carries every measured number and hash, Newsreader carries the one
+ * editorial voice in the hero. Metric-matched fallbacks keep `swap` from
+ * costing layout shift.
+ */
+@font-face {
+  font-family: "Archivo";
+  src: url("/fonts/archivo-variable.woff2") format("woff2-variations"),
+       url("/fonts/archivo-variable.woff2") format("woff2");
+  font-weight: 400 600;
+  font-stretch: 85% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Commit Mono";
+  src: url("/fonts/commit-mono-variable.woff2") format("woff2-variations"),
+       url("/fonts/commit-mono-variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Newsreader";
+  src: url("/fonts/newsreader-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Archivo Fallback";
+  src: local("Arial");
+  size-adjust: 122.7%;
+  ascent-override: 71.56%;
+  descent-override: 17.11%;
+  line-gap-override: 0%;
+}
+
 @theme {
   --color-paper: #faf7f2;
   --color-ink: #1a1712;
   --color-amber: #b45309;
   --color-rule: #e4ddd3;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Surfaces. A value step above paper is the first half of depth; the
+     hairline and the contact shadow are the other two. */
+  --color-sub-1: #fffdfa;
+  --color-sub-2: #f3ede4;
+  --color-sunk: #efe8dd;
+
+  /* Chroma-bearing shadow ink — warm, never neutral black. */
+  --color-shadow-ink: #4a3d2a;
+
+  --font-sans: "Archivo", "Archivo Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Commit Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-editorial: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+}
+
+:root {
+  --radius-structure: 10px;
+  --radius-control: 8px;
+  --radius-flush: 0px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur-slow: 420ms;
+
+  /* Elevation ladder. Composed from the shadow-ink token, so the shadows
+     carry the paper's warmth instead of graying it out. */
+  --elev-1:
+    0 1px 2px -1px color-mix(in oklab, var(--color-shadow-ink) 14%, transparent),
+    0 4px 12px -4px color-mix(in oklab, var(--color-shadow-ink) 16%, transparent);
+  --elev-2:
+    0 2px 4px -2px color-mix(in oklab, var(--color-shadow-ink) 18%, transparent),
+    0 12px 32px -8px color-mix(in oklab, var(--color-shadow-ink) 22%, transparent);
+  --elev-3:
+    0 4px 8px -4px color-mix(in oklab, var(--color-shadow-ink) 20%, transparent),
+    0 24px 64px -12px color-mix(in oklab, var(--color-shadow-ink) 26%, transparent);
+
+  /* The edge highlight a real bevel catches along its top. */
+  --depth-edge:
+    inset 0 1px 0 0 color-mix(in oklab, white 70%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--color-rule) 90%, transparent);
 }
 
 html {
@@ -29,6 +125,193 @@ body {
 /* Chart lines and hard-break annotations (methodology/`/` instrument) share this hairline rule color. */
 .hairline {
   border-color: var(--color-rule);
+}
+
+/* ---------------------------------------------------------------- depth -- */
+
+.panel {
+  position: relative;
+  border-radius: var(--radius-structure);
+  background-color: var(--color-sub-1);
+  box-shadow: var(--depth-edge), var(--elev-1);
+  transition:
+    box-shadow var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+.panel-hover:hover {
+  box-shadow: var(--depth-edge), var(--elev-2);
+  transform: translateY(-2px);
+}
+.panel-float {
+  border-radius: var(--radius-structure);
+  background-color: var(--color-sub-1);
+  box-shadow: var(--depth-edge), var(--elev-3);
+}
+/* A recessed well — code blocks, chain rails, anything that should read as
+   cut into the sheet rather than sitting on it. */
+.well {
+  border-radius: var(--radius-structure);
+  background-color: var(--color-sunk);
+  box-shadow:
+    inset 0 1px 2px 0 color-mix(in oklab, var(--color-shadow-ink) 12%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--color-rule) 80%, transparent);
+}
+
+/* ------------------------------------------------------------- ambient -- */
+/*
+ * One radial wash, tinted by the project's own signal hue, clipped to its
+ * own box. Linear's "expensive" glow is a radial-gradient div at a few
+ * percent — no WebGL, no filter, no backdrop-filter. Measured cost of the
+ * alternatives on this machine today: gaussian blur on a shadow layer
+ * 58 -> 24fps, mix-blend-mode: overlay 60 -> 47.8, backdrop-filter on small
+ * chips 60 -> 44.7. This costs none of that: it paints once, composites
+ * once, and never blends.
+ *
+ * `overflow: clip` (not `visible`) is load-bearing — an unclipped ambient
+ * gradient bled a sibling project's page to 437px wide at a 390px viewport
+ * while scrollWidth still read a clean 390.
+ */
+.ambient {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+.ambient::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -30% -5% auto -5%;
+  height: 150%;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      52% 46% at 14% 4%,
+      color-mix(in oklab, var(--color-amber) 13%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 40% at 92% 0%,
+      color-mix(in oklab, var(--color-shadow-ink) 7%, transparent),
+      transparent 72%
+    );
+}
+
+/* --------------------------------------------------------------- meter -- */
+/*
+ * The measured-vs-bar comparison. A track, the required bar as a notch, and
+ * the achieved value as a fill — so "0.0% against a 5% ceiling" is a shape
+ * before it is a number.
+ */
+.meter {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background-color: var(--color-sunk);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-rule) 90%, transparent);
+  overflow: hidden;
+}
+.meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background-color: var(--color-amber);
+  transform-origin: left center;
+  animation: meter-grow var(--dur-slow) var(--ease-out) both;
+}
+.meter-fill-quiet {
+  background-color: color-mix(in oklab, var(--color-ink) 55%, transparent);
+}
+.meter-notch {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background-color: color-mix(in oklab, var(--color-ink) 70%, transparent);
+}
+@keyframes meter-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* --------------------------------------------------------------- chain -- */
+/* The hash-linked reading chain: a rail with a node per run group. */
+.chain-rail::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-rule) 100%, transparent),
+    color-mix(in oklab, var(--color-amber) 30%, transparent)
+  );
+}
+.chain-node {
+  box-shadow: 0 0 0 3px var(--color-paper);
+}
+
+/* ------------------------------------------------------------ entrance -- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise var(--dur-slow) var(--ease-out) both;
+}
+.rise-2 {
+  animation-delay: 70ms;
+}
+.rise-3 {
+  animation-delay: 140ms;
+}
+.rise-4 {
+  animation-delay: 210ms;
+}
+.rise-5 {
+  animation-delay: 280ms;
+}
+
+/* ------------------------------------------------------------ controls -- */
+
+a,
+button,
+[role="button"] {
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+summary {
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+summary::-webkit-details-marker {
+  display: none;
 }
 
 /*
@@ -47,6 +330,24 @@ body {
   }
   .demo-reduced {
     display: block;
+  }
+}
+
+/* Motion here is decoration, so it goes away entirely when asked. */
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .meter-fill {
+    animation: none;
+  }
+  .panel,
+  a,
+  button,
+  [role="button"],
+  summary {
+    transition: none;
+  }
+  .panel-hover:hover {
+    transform: none;
   }
 }
 

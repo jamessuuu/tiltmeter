@@ -11,7 +11,7 @@
 export function DemoVideo() {
   return (
     <figure className="mt-4" data-testid="demo-video">
-      <div className="border hairline bg-white/40">
+      <div className="overflow-hidden rounded-[10px]">
         <video
           className="demo-video block w-full"
           autoPlay
@@ -26,7 +26,11 @@ export function DemoVideo() {
           <source src="/demo/tiltmeter-demo.webm" type="video/webm" />
         </video>
         <div className="demo-reduced p-4" data-testid="demo-reduced">
-          <img src="/demo/tiltmeter-poster.png" alt="" className="w-full border hairline" />
+          <img
+            src="/demo/tiltmeter-poster.png"
+            alt="The tiltmeter landing page as deployed, showing the calibration readout — the first frame of the recording."
+            className="w-full rounded-[10px]"
+          />
           <p className="mt-3 text-sm">
             Motion is reduced on this device, so the recording does not autoplay.{" "}
             <a href="/demo/tiltmeter-demo.webm" className="underline hover:text-amber">
@@ -38,11 +42,11 @@ export function DemoVideo() {
       </div>
       <figcaption className="mt-2 text-xs text-ink/60 max-w-prose">
         A scripted run against the real deployed site (not a screen capture): the landing page, then{" "}
-        <a href="/models" className="underline hover:text-amber">
+        <a href="/models" className="inline-block py-1 underline hover:text-amber">
           /models
         </a>{" "}
         — proving no leaderboard exists there — then{" "}
-        <a href="/methodology" className="underline hover:text-amber">
+        <a href="/methodology" className="inline-block py-1 underline hover:text-amber">
           /methodology
         </a>
         .

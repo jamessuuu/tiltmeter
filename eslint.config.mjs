@@ -35,6 +35,11 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/playwright-report/**",
       "**/test-results/**",
+      // Local screenshot/verification harness (tools/screens/*.mjs): dev-only
+      // Playwright drivers that are never imported by the package or the site,
+      // run by hand during a design pass. Outside the TS project service on
+      // purpose so they cannot drift into shipped code.
+      "tools/screens/**",
     ],
   },
   js.configs.recommended,
