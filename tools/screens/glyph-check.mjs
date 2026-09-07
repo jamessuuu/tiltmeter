@@ -1,27 +1,27 @@
 /**
- * Finds characters the page renders that the VENDORED FONTS DO NOT COVER,
- * by measuring in a real browser rather than by reasoning about a declared
- * unicode-range.
+ * Finds characters the page renders that the VENDORED FONTS DO NOT COVER.
  *
- * Why measurement and not the declared range: this project's @font-face
- * blocks do not declare `unicode-range` at all. The risk is still real —
- * the woff2 files are subset to the Google Fonts latin range, so a glyph
- * outside it simply is not in the font and the browser falls through to a
- * system face per character. Same visible outcome, different mechanism, and
- * a checker built around parsing a range that isn't there would report a
- * clean pass forever. So coverage is probed directly.
+ * Coverage comes from `font-coverage.json` — the union of the cmap of every
+ * vendored woff2, read out of the font files themselves by
+ * `tools/screens/font-coverage.py --emit`. There is no inference in this
+ * gate at all.
  *
- * Method: for each distinct character actually rendered, measure its advance
- * width on a canvas with the target font first in the stack, then with only
- * the fallback. A covered glyph in a mono face measures differently from the
- * fallback; an uncovered one measures identically because it IS the
- * fallback. Two controls run every time so the probe is proven to
- * discriminate before its verdict is believed:
- *   - "A"      MUST come back covered
- *   - U+27FF ⟿ MUST come back uncovered (well outside latin)
- * If either control misbehaves the script exits non-zero and reports
- * nothing, because a probe that cannot tell the two apart is worse than no
- * probe.
+ * That is a correction. The first version of this file measured coverage in
+ * the browser by comparing a character's advance width with the font first
+ * in the stack against the fallback alone, and calling it covered when they
+ * differed. That method has a false-negative mode: when the font's advance
+ * happens to COINCIDE with the fallback's, a present glyph reads as absent.
+ * It fired here — U+2014 em dash was reported missing from Archivo when the
+ * cmap shows it present in all three faces — and it produced a wrong
+ * downstream claim (that the files were subset more tightly than
+ * substrate.css declares; they are not, the declared range and the cmap
+ * agree on every character tested).
+ *
+ * Controls did not catch it and could not: proving a method separates a
+ * definitely-present glyph from a definitely-absent one says nothing about
+ * a coincidental advance match on some third character. The lesson is
+ * narrower than "add more controls" — when ground truth is readable, read
+ * it instead of inferring, and the whole error class disappears.
  *
  *   GLYPH_BASE=http://127.0.0.1:PORT node tools/screens/glyph-check.mjs
  *
@@ -30,9 +30,22 @@
  * looks like a pass.
  */
 import { chromium } from "file:///C:/Users/admin/agentjames/node_modules/playwright/index.mjs";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const BASE = process.env.GLYPH_BASE;
 if (!BASE) throw new Error("set GLYPH_BASE");
+
+const manifest = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, "font-coverage.json"), "utf8"),
+);
+const COVERED = new Set(manifest.codePoints);
+
+// The manifest must be able to answer both ways, or it is not being read.
+if (!COVERED.has(0x41) || COVERED.has(0x27ff)) {
+  console.error("font-coverage.json failed its own sanity check (A present, U+27FF absent). Regenerate it.");
+  process.exit(2);
+}
 
 const ROUTES = [
   "/",
@@ -44,28 +57,17 @@ const ROUTES = [
 ];
 
 /**
- * Prose punctuation that is allowed to fall back to a system face: it sits
- * inline inside a sentence, is covered by every default font on every
- * platform, and turning it into an SVG would break text selection,
- * copy-paste and screen-reader reading order.
+ * Uncovered characters that may still ship as TEXT, because they sit inline
+ * inside a sentence: they are read, selected and copied, every default
+ * platform font has them, and converting them to SVG would break selection,
+ * copy-paste and screen-reader order.
  *
- * A DECORATIVE mark is NOT allowlistable here. A character that is its own
- * text node, doing an icon's job, must be an inline SVG — it has no
- * semantic role to preserve and it carries the real tofu risk.
+ * A DECORATIVE mark — one whose ELEMENT contains nothing else, doing an
+ * icon's job — is never allowlistable. It has no semantic role to preserve
+ * and carries the real tofu risk, so it becomes an inline SVG.
  */
 const ALLOWED = new Map([
-  ["\u2014", "em dash — inline prose punctuation, universal coverage"],
-  ["\u2013", "en dash – inline prose punctuation, universal coverage"],
-  ["\u2192", "right arrow → follows link text inline; universal coverage; SVG would break selection"],
-  ["\u2019", "right single quote ’ inline prose punctuation, universal coverage"],
-  ["\u201C", "left double quote “ inline prose punctuation, universal coverage"],
-  ["\u201D", "right double quote ” inline prose punctuation, universal coverage"],
-  ["\u00B7", "middle dot · inline separator, universal coverage"],
-  ["\u00A0", "non-breaking space"],
-  ["\u2264", "less-than-or-equal ≤ inline in a stated bar"],
-  ["\u2265", "greater-than-or-equal ≥ inline in a stated bar"],
-  ["\u00A7", "section sign § inline in spec references"],
-  ["\u2212", "minus sign − inline in numeric prose"],
+  [0x2192, "right arrow → follows link text inline and joins hashes in the chain; universal platform coverage; SVG would break selection"],
 ]);
 
 const browser = await chromium.launch();
@@ -73,80 +75,48 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 const page = await ctx.newPage();
 
 const findings = new Map();
-let controlsOk = null;
 
 for (const route of ROUTES) {
   await page.goto(BASE + route, { waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
-  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(300);
 
-  const result = await page.evaluate(() => {
-    const canvas = document.createElement("canvas");
-    const g = canvas.getContext("2d");
-    if (g === null) throw new Error("no 2d context");
-
-    /** Does `font` supply a glyph for `ch`, or is this the fallback showing through? */
-    const covered = (ch, font, fallback) => {
-      g.font = `32px ${fallback}`;
-      const bare = g.measureText(ch).width;
-      g.font = `32px ${font}, ${fallback}`;
-      const withFont = g.measureText(ch).width;
-      return withFont !== bare;
-    };
-
-    // Controls: prove the probe discriminates before trusting its verdicts.
-    const controls = {
-      coveredControl: covered("A", '"Commit Mono"', "monospace"),
-      uncoveredControl: covered("\u27FF", '"Commit Mono"', "monospace"),
-    };
-
-    // Every distinct non-ASCII character actually rendered, with the family
-    // its element resolves to and whether it stands alone in its text node.
+  const chars = await page.evaluate(() => {
+    // Non-rendered containers hold text that never reaches a visitor —
+    // notably Next.js's inlined RSC payload, which serializes the page's own
+    // strings into a <script> and doubles every count for a checker that
+    // walks all of <body>. Filtered by TAG and by computed display, never by
+    // box size: content inside a collapsed <details> measures zero and
+    // renders the instant someone opens it, which is exactly where a
+    // decorative marker tends to live.
+    const NON_RENDERED = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "TITLE"]);
     const seen = new Map();
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode()) !== null) {
       const el = node.parentElement;
-      if (el === null) continue;
+      if (el === null || NON_RENDERED.has(el.tagName)) continue;
       const cs = getComputedStyle(el);
       if (cs.display === "none" || cs.visibility === "hidden") continue;
-      const raw = node.nodeValue ?? "";
-      for (const ch of raw) {
-        if (ch.codePointAt(0) < 128) continue;
-        const family = cs.fontFamily.split(",")[0].replace(/["']/g, "").trim();
-        const key = ch;
-        const prev = seen.get(key) ?? { ch, count: 0, families: new Set(), standalone: false };
+      const elText = (el.textContent ?? "").trim();
+      for (const ch of node.nodeValue ?? "") {
+        const cp = ch.codePointAt(0);
+        if (cp === undefined || cp < 128) continue;
+        const prev = seen.get(ch) ?? { ch, cp, count: 0, families: new Set(), standalone: false };
         prev.count++;
-        prev.families.add(family);
-        // "Standalone" = the character is the ENTIRE text of its ELEMENT,
-        // not merely of its text node. JSX splits `{a} — {b}` into separate
-        // text nodes, so the node-level test wrongly flagged an em dash
-        // sitting inside "The identical plan — 12 cells" as decorative.
-        if ((el.textContent ?? "").trim() === ch) prev.standalone = true;
-        seen.set(key, prev);
+        prev.families.add(cs.fontFamily.split(",")[0].replace(/["']/g, "").trim());
+        // Decorative = the character is the ENTIRE text of its ELEMENT.
+        // Not "of its text node": JSX splits `{a} — {b}`, so the em dash in
+        // "The identical plan — 12 cells" lands alone in a text node while
+        // plainly being prose.
+        if (elText === ch) prev.standalone = true;
+        seen.set(ch, prev);
       }
     }
-
-    const out = [];
-    for (const v of seen.values()) {
-      const family = [...v.families][0] ?? "monospace";
-      const isCovered = covered(v.ch, `"${family}"`, family.includes("Commit") ? "monospace" : "sans-serif");
-      out.push({
-        ch: v.ch,
-        code: `U+${v.ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`,
-        count: v.count,
-        families: [...v.families],
-        standalone: v.standalone,
-        covered: isCovered,
-      });
-    }
-    return { controls, chars: out };
+    return [...seen.values()].map((v) => ({ ...v, families: [...v.families] }));
   });
 
-  if (controlsOk === null) controlsOk = result.controls;
-
-  for (const c of result.chars) {
-    if (c.covered) continue;
+  for (const c of chars) {
+    if (COVERED.has(c.cp)) continue;
     const existing = findings.get(c.ch) ?? { ...c, count: 0, routes: [] };
     existing.count += c.count;
     existing.standalone = existing.standalone || c.standalone;
@@ -157,30 +127,24 @@ for (const route of ROUTES) {
 
 await browser.close();
 
-console.log("=== controls ===");
-console.log(`  "A"      covered by Commit Mono : ${String(controlsOk?.coveredControl)}   (must be true)`);
-console.log(`  U+27FF   covered by Commit Mono : ${String(controlsOk?.uncoveredControl)}  (must be false)`);
-if (controlsOk?.coveredControl !== true || controlsOk.uncoveredControl !== false) {
-  console.error("\nPROBE CANNOT DISCRIMINATE — refusing to report. Fix the probe before believing any verdict.");
-  process.exit(2);
-}
+console.log("=== coverage source ===");
+console.log(`  font-coverage.json — ${String(manifest.codePoints.length)} code points, union of:`);
+for (const [name, n] of Object.entries(manifest.fonts)) console.log(`    ${name}: ${String(n)}`);
 
-console.log("\n=== characters NOT covered by the vendored fonts ===");
+console.log("\n=== rendered characters NOT in any vendored font ===");
 let blocking = 0;
-if (findings.size === 0) {
-  console.log("  none");
-}
+if (findings.size === 0) console.log("  none");
 for (const f of [...findings.values()].sort((a, b) => b.count - a.count)) {
-  const reason = ALLOWED.get(f.ch);
-  // A decorative mark is never allowlistable, even if the character also
-  // appears as prose punctuation elsewhere.
+  const reason = ALLOWED.get(f.cp);
   const ok = reason !== undefined && !f.standalone;
   if (!ok) blocking++;
+  const code = `U+${f.cp.toString(16).toUpperCase().padStart(4, "0")}`;
   console.log(
-    `  ${ok ? "allow " : "BLOCK "} ${f.code} ${f.ch}  x${String(f.count).padStart(3)}  ${f.standalone ? "STANDALONE(decorative)" : "inline"}  [${f.families.join("/")}]  ${f.routes.join(" ")}`,
+    `  ${ok ? "allow " : "BLOCK "} ${code} ${f.ch}  x${String(f.count).padStart(3)}  ${f.standalone ? "STANDALONE(decorative)" : "inline"}  [${f.families.join("/")}]  ${f.routes.join(" ")}`,
   );
   if (ok) console.log(`           reason: ${reason}`);
   else if (f.standalone) console.log("           a standalone decorative mark must be an inline SVG, not a font glyph");
+  else console.log("           not covered by any vendored font and not allowlisted");
 }
 
 console.log(`\n${String(blocking)} blocking`);

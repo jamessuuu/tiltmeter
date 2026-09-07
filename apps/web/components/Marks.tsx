@@ -4,10 +4,14 @@
  * The vendored woff2 files are subset to the Google Fonts latin range, so a
  * character outside it is simply not in the font and the browser falls
  * through to whatever face the visitor's system supplies — which on a
- * machine without coverage is tofu. Measured on the shipped page
- * (tools/screens/glyph-check.mjs, which probes real advance widths in a
- * browser rather than reasoning about a declared unicode-range): U+25B8 ▸
- * and U+2192 → both fall back, and so does U+2014 —.
+ * machine without coverage is tofu. Read straight out of the woff2 cmaps
+ * (tools/screens/font-coverage.py): U+25B8 ▸ and U+2192 → are absent from
+ * all three faces.
+ *
+ * U+2014 — is PRESENT and was never a finding. An earlier version of this
+ * comment said it fell back, because the first coverage check inferred
+ * presence from advance widths and Archivo's em-dash advance coincides with
+ * the fallback's. Corrected once the cmap was read directly.
  *
  * The line drawn, and it is a judgement rather than a blanket rule:
  *

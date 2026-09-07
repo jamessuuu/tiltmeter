@@ -1,4 +1,20 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+/**
+ * Coverage comes from the committed cmap manifest, generated out of the
+ * woff2 files themselves by `tools/screens/font-coverage.py --emit`. This
+ * spec previously MEASURED coverage with a canvas advance-width comparison,
+ * which has a false-negative mode when a font's advance coincides with the
+ * fallback's — it reported the em dash missing from Archivo when the cmap
+ * shows it present in all three faces. Ground truth is readable here, so it
+ * is read rather than inferred.
+ */
+const MANIFEST = JSON.parse(
+  readFileSync(join(import.meta.dirname, "..", "..", "..", "tools", "screens", "font-coverage.json"), "utf8"),
+) as { codePoints: number[] };
+const COVERED = new Set(MANIFEST.codePoints);
 
 /**
  * No decorative mark may be a font glyph.
@@ -19,7 +35,10 @@ import { test, expect } from "@playwright/test";
  *   and a mono hash chain "a1b2c3 → d4e5f6" are read, selected and copied;
  *   replacing them with SVG would break selection, copy-paste and
  *   screen-reader order to guard against characters every default platform
- *   font covers. Em dashes fall back too, and they also stay.
+ *   font covers. (Em dashes are PRESENT in all three vendored faces and
+ *   were never a finding — an earlier advance-width check reported them
+ *   missing because Archivo's em-dash advance coincides with the
+ *   fallback's.)
  *
  * tools/screens/glyph-check.mjs is the fuller instrument — it measures real
  * advance widths against the actual vendored fonts, with two controls that
@@ -41,26 +60,9 @@ for (const route of ROUTES) {
     await page.goto(route);
     await page.waitForLoadState("networkidle");
 
-    const standalone = await page.evaluate(() => {
-      const canvas = document.createElement("canvas");
-      const g = canvas.getContext("2d");
-      if (g === null) throw new Error("no 2d context");
-
-      /**
-       * Does `family` actually supply a glyph for `ch`, or is the fallback
-       * showing through? Measured, not inferred from the codepoint: the
-       * vendored files turned out to be subset MORE tightly than the range
-       * substrate.css declares, so reasoning about ranges gives the wrong
-       * answer in both directions. U+00B7 · is covered and must not be
-       * flagged; U+25B8 ▸ is not and must be.
-       */
-      const covered = (ch: string, family: string, fallback: string): boolean => {
-        g.font = `32px ${fallback}`;
-        const bare = g.measureText(ch).width;
-        g.font = `32px "${family}", ${fallback}`;
-        return g.measureText(ch).width !== bare;
-      };
-
+    const standalone = await page.evaluate((coveredList: number[]) => {
+      const covered = new Set(coveredList);
+      const NON_RENDERED = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "TITLE"]);
       const found: string[] = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let node = walker.nextNode();
@@ -75,6 +77,10 @@ for (const route of ROUTES) {
         // inline prose. What makes a mark decorative is that nothing else in
         // its element carries meaning, which is what an icon looks like.
         const elText = (el?.textContent ?? "").trim();
+        if (el !== null && NON_RENDERED.has(el.tagName)) {
+          node = walker.nextNode();
+          continue;
+        }
         if (
           text.length > 0 &&
           // Code-point length, not UTF-16 length: a single astral character
@@ -92,8 +98,7 @@ for (const route of ROUTES) {
           const cs = getComputedStyle(el);
           if (cs.display !== "none" && cs.visibility !== "hidden") {
             const family = (cs.fontFamily.split(",")[0] ?? "sans-serif").replace(/["']/g, "").trim();
-            const fallback = family.toLowerCase().includes("mono") ? "monospace" : "sans-serif";
-            if (!covered(text, family, fallback)) {
+            if (!covered.has(text.codePointAt(0) ?? 0)) {
               found.push(
                 `U+${(text.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, "0")} "${text}" in <${el.tagName.toLowerCase()}> (${family})`,
               );
@@ -103,7 +108,7 @@ for (const route of ROUTES) {
         node = walker.nextNode();
       }
       return found;
-    });
+    }, [...COVERED]);
 
     expect(standalone, "decorative marks must be inline SVG, not font glyphs").toEqual([]);
   });
