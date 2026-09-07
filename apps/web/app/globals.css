@@ -57,6 +57,24 @@
   font-style: normal;
   font-display: swap;
 }
+/*
+ * The real italic, not a skewed roman. Vendoring only the roman while
+ * rendering <em> inside this face left Chrome SYNTHESIZING an oblique —
+ * confirmed by document.fonts listing exactly one loaded Newsreader face
+ * (normal/400) while the <em> computed font-style: italic. In a serif that
+ * is a visible defect: Newsreader's italic has genuinely different
+ * letterforms — single-storey a, calligraphic stress — not a sheared
+ * upright. Note that `document.fonts.check("italic 16px Newsreader")`
+ * returns TRUE either way, because the family matches and the browser will
+ * happily fake it; the loaded-face list is what tells the truth.
+ */
+@font-face {
+  font-family: "Newsreader";
+  src: url("/fonts/newsreader-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
 @font-face {
   font-family: "Archivo Fallback";
   src: local("Arial");

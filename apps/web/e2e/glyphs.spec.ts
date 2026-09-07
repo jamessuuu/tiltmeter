@@ -138,3 +138,49 @@ test("the disclosure caret is an SVG and still rotates when opened", async ({ pa
   await page.waitForTimeout(500);
   expect(await read()).toBe("90deg|none");
 });
+
+/**
+ * No text may render in a SYNTHESIZED font face.
+ *
+ * Vendoring only Newsreader's roman while rendering <em> inside that face
+ * left Chrome faking the italic by shearing the upright — visible at 4x in
+ * a serif, where a real italic has different letterforms entirely rather
+ * than a slant. It shipped that way and neither the glyph gate nor the
+ * project gate could see it, because every character was present and every
+ * request succeeded.
+ *
+ * The trap when checking this: `document.fonts.check("italic 16px
+ * Newsreader")` returns TRUE even with no italic face loaded, because the
+ * family matches and the browser will happily synthesize. Only the list of
+ * LOADED faces tells the truth, which is what this asserts.
+ */
+const VENDORED = ["Archivo", "Commit Mono", "Newsreader"];
+
+test("no vendored face is synthesized rather than loaded", async ({ page }) => {
+  await page.goto("/models/");
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => document.fonts.ready);
+
+  const result = await page.evaluate((vendored: string[]) => {
+    const loaded = new Set(
+      [...document.fonts]
+        .filter((f) => f.status === "loaded")
+        .map((f) => `${f.family}|${f.style}`),
+    );
+    const missing: string[] = [];
+    for (const el of document.body.querySelectorAll("*")) {
+      const cs = getComputedStyle(el);
+      if (el.textContent.trim().length === 0) continue;
+      // noUncheckedIndexedAccess is on, so split()[0] is string | undefined
+      // even though a split always yields at least one element.
+      const family = (cs.fontFamily.split(",")[0] ?? "").replace(/["']/g, "").trim();
+      if (!vendored.includes(family)) continue;
+      const style = cs.fontStyle === "normal" ? "normal" : "italic";
+      const key = `${family}|${style}`;
+      if (!loaded.has(key)) missing.push(`${key} needed by <${el.tagName.toLowerCase()}>`);
+    }
+    return { missing: [...new Set(missing)], loaded: [...loaded] };
+  }, VENDORED);
+
+  expect(result.missing, `a face is being synthesized; loaded = ${result.loaded.join(", ")}`).toEqual([]);
+});
