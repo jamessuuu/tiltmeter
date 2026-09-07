@@ -36,6 +36,15 @@ const failed = [];
 page.on("response", (r) => {
   if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`);
 });
+// A screenshot/DOM check that does not listen for these can photograph a
+// page that threw on boot and call it a pass: after a ReferenceError the
+// prerendered shell is still on screen and looks perfect while the
+// interactive layer is dead. For a Next.js static export that is a live
+// risk, because hydration failures are exactly this shape.
+page.on("pageerror", (e) => failed.push(`pageerror: ${e.message}`));
+page.on("console", (m) => {
+  if (m.type() === "error") failed.push(`console.error: ${m.text()}`);
+});
 await page.goto(URL, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 
