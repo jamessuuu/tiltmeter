@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 function Spec({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="text-[10.5px] uppercase tracking-[0.1em] text-ink/50">{k}</dt>
+      <dt className="text-[10.5px] uppercase tracking-[0.1em] text-ink/70">{k}</dt>
       <dd className={`mt-1 text-[15px] font-semibold tracking-[-0.01em] ${mono ? "font-mono tabular-nums" : ""}`}>
         {v}
       </dd>
@@ -76,11 +76,11 @@ export default async function SuitePage({ params }: { params: Promise<{ id: stri
       <div className="ambient border-b hairline">
         <div className="mx-auto max-w-5xl px-6 pb-12 pt-14">
           <div className="flex items-center gap-3 rise">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/50">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/70">
               Launch suite
             </span>
             <span className="h-px flex-1 bg-rule" aria-hidden="true" />
-            <span className="font-mono text-[11px] text-ink/45">
+            <span className="font-mono text-[11px] text-ink/65">
               suiteSpecHash {shortHash(suiteSpecHash(suite))}
             </span>
           </div>
@@ -129,21 +129,21 @@ export default async function SuitePage({ params }: { params: Promise<{ id: stri
                 <div className="font-mono text-5xl font-semibold leading-none tracking-[-0.04em] tabular-nums">
                   {active.length}
                 </div>
-                <div className="mt-2 text-[11px] uppercase tracking-[0.08em] text-ink/50">active items</div>
+                <div className="mt-2 text-[11px] uppercase tracking-[0.08em] text-ink/70">active items</div>
               </div>
               <div>
                 <div className="font-mono text-5xl font-semibold leading-none tracking-[-0.04em] tabular-nums text-amber">
                   {negatives}
                 </div>
-                <div className="mt-2 text-[11px] uppercase tracking-[0.08em] text-ink/50">negative</div>
+                <div className="mt-2 text-[11px] uppercase tracking-[0.08em] text-ink/70">negative</div>
               </div>
               <div className="min-w-[220px] flex-1">
                 <div className="meter">
                   <span className="meter-fill" style={{ width: `${String(negativePct)}%` }} />
                 </div>
-                <div className="mt-2 flex justify-between font-mono text-[11px] text-ink/50">
+                <div className="mt-2 flex justify-between font-mono text-[11px] text-ink/70">
                   <span className="tabular-nums">{negativePct.toFixed(1)}% negative</span>
-                  <span className={meetsNegativesQuota(suite) ? "text-ink/60" : "text-amber"}>
+                  <span className={meetsNegativesQuota(suite) ? "text-ink/75" : "text-amber"}>
                     {meetsNegativesQuota(suite) ? "quota met" : "quota NOT met"}
                   </span>
                 </div>
@@ -160,9 +160,9 @@ export default async function SuitePage({ params }: { params: Promise<{ id: stri
                     key={item.id}
                     className={`rounded-[4px] px-2 py-1 font-mono text-[11px] tabular-nums ${
                       isRetired
-                        ? "bg-ink/5 text-ink/35 line-through"
+                        ? "bg-ink/5 text-ink/65 line-through"
                         : isNeg
-                          ? "bg-amber/15 text-amber"
+                          ? "text-amber ring-1 ring-amber/45"
                           : "bg-ink/6 text-ink/65"
                     }`}
                     title={`${item.polarity}${isRetired ? " · retired" : ""}`}
@@ -172,7 +172,7 @@ export default async function SuitePage({ params }: { params: Promise<{ id: stri
                 );
               })}
             </ul>
-            <p className="mt-4 font-mono text-[11px] text-ink/45">
+            <p className="mt-4 font-mono text-[11px] text-ink/65">
               amber = negative · quiet = positive
               {retired.length > 0 ? " · struck = retired" : ""}
             </p>
@@ -196,7 +196,7 @@ export default async function SuitePage({ params }: { params: Promise<{ id: stri
             <h2 id="artifacts-heading" className="text-2xl font-semibold tracking-[-0.02em]">
               Artifacts
             </h2>
-            <span className="font-mono text-xs tabular-nums text-ink/50">
+            <span className="font-mono text-xs tabular-nums text-ink/70">
               {suite.artifacts.length} probed
             </span>
           </div>
@@ -212,13 +212,13 @@ export default async function SuitePage({ params }: { params: Promise<{ id: stri
                 className="panel panel-hover p-4 rise"
                 style={{ animationDelay: `${String(i * 35)}ms` }}
               >
-                <div className="font-mono text-[11px] text-ink/45">{artifact.id}</div>
+                <div className="font-mono text-[11px] text-ink/65">{artifact.id}</div>
                 <div className="mt-1.5 text-[15px] font-semibold tracking-[-0.01em]">
                   {artifact.materialized.name}
                 </div>
-                <div className="mt-1 text-[12px] text-ink/55">{artifact.kind}</div>
+                <div className="mt-1 text-[12px] text-ink/70">{artifact.kind}</div>
                 {artifact.source.origin === "public" ? (
-                  <div className="mt-3 border-t hairline pt-2 font-mono text-[10.5px] text-ink/50">
+                  <div className="mt-3 border-t hairline pt-2 font-mono text-[10.5px] text-ink/70">
                     {artifact.source.repo}@{artifact.source.commit.slice(0, 12)}
                   </div>
                 ) : null}

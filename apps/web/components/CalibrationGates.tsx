@@ -74,15 +74,15 @@ function Gate(props: GateProps) {
   return (
     <div className={`panel panel-hover p-6 sm:p-7 ${riseClass}`}>
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/55">{label}</h3>
-        <span className="text-[11px] font-mono text-ink/45">n={trials}</span>
+        <h3 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/70">{label}</h3>
+        <span className="text-[11px] font-mono text-ink/65">n={trials}</span>
       </div>
 
       <p className="mt-3 flex items-baseline gap-2">
         <span className="font-mono text-6xl font-semibold tracking-[-0.045em] tabular-nums leading-none">
           {value}
         </span>
-        <span className="text-sm text-ink/55 tabular-nums">
+        <span className="text-sm text-ink/70 tabular-nums">
           {fires}/{trials} {countLabel}
         </span>
       </p>
@@ -94,14 +94,14 @@ function Gate(props: GateProps) {
           ) : null}
           <span className="meter-notch" style={{ left: `calc(${String(barPct)}% - 1px)` }} />
         </div>
-        <div className="mt-2 flex justify-between text-[11px] font-mono text-ink/50">
+        <div className="mt-2 flex justify-between text-[11px] font-mono text-ink/70">
           <span>{bar}</span>
           <span className="text-ink/70">{margin}</span>
         </div>
       </div>
 
       <TrialGrid trials={trials} lit={cellsLit} litFirst={direction === "floor"} />
-      <p className="mt-3 text-xs text-ink/50">
+      <p className="mt-3 text-xs text-ink/70">
         {direction === "floor"
           ? `one cell per trial — ${String(trials - cellsLit)} misses shown quiet`
           : `one cell per trial — every one quiet is a trial that did not fire`}
@@ -159,26 +159,26 @@ export function CalibrationReadout({ calibration }: { calibration: CalibrationRe
   return (
     <div className="panel-float p-6 sm:p-7">
       <div className="flex items-baseline justify-between gap-4">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/70">
           Calibration
         </span>
-        <span className="font-mono text-[11px] text-ink/45">both gates cleared</span>
+        <span className="font-mono text-[11px] text-ink/65">both gates cleared</span>
       </div>
       <dl className="mt-5 flex flex-col gap-6">
         {rows.map((r) => (
           <div key={r.key}>
-            <dt className="text-[12px] uppercase tracking-[0.08em] text-ink/55">{r.label}</dt>
+            <dt className="text-[12px] uppercase tracking-[0.08em] text-ink/70">{r.label}</dt>
             <dd className="mt-1.5 flex items-baseline gap-2.5">
               <span className="font-mono text-[40px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
                 {r.value}
               </span>
-              <span className="text-[13px] tabular-nums text-ink/55">{r.detail}</span>
+              <span className="text-[13px] tabular-nums text-ink/70">{r.detail}</span>
             </dd>
             <div className="mt-3 meter">
               {r.fillPct > 0 ? <span className="meter-fill" style={{ width: `${String(r.fillPct)}%` }} /> : null}
               <span className="meter-notch" style={{ left: `calc(${String(r.notchPct)}% - 1px)` }} />
             </div>
-            <div className="mt-1.5 font-mono text-[10.5px] text-ink/45">{r.bar}</div>
+            <div className="mt-1.5 font-mono text-[10.5px] text-ink/65">{r.bar}</div>
           </div>
         ))}
       </dl>

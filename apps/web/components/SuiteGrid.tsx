@@ -38,7 +38,7 @@ export function SuiteGrid({ suites }: { suites: Suite[] }) {
                 <div className="font-mono text-4xl font-semibold tabular-nums tracking-[-0.035em] leading-none">
                   {active.length}
                 </div>
-                <div className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-ink/50">
+                <div className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-ink/70">
                   active items
                 </div>
               </div>
@@ -46,7 +46,7 @@ export function SuiteGrid({ suites }: { suites: Suite[] }) {
                 <div className="font-mono text-4xl font-semibold tabular-nums tracking-[-0.035em] leading-none text-amber">
                   {negatives}
                 </div>
-                <div className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-ink/50">
+                <div className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-ink/70">
                   negative
                 </div>
               </div>
@@ -56,15 +56,15 @@ export function SuiteGrid({ suites }: { suites: Suite[] }) {
               <div className="meter">
                 <span className="meter-fill" style={{ width: `${String(negativePct)}%` }} />
               </div>
-              <div className="mt-2 flex justify-between text-[11px] font-mono text-ink/50">
+              <div className="mt-2 flex justify-between text-[11px] font-mono text-ink/70">
                 <span className="tabular-nums">{negativePct.toFixed(1)}% negative</span>
-                <span className={quota ? "text-ink/60" : "text-amber"}>
+                <span className={quota ? "text-ink/75" : "text-amber"}>
                   {quota ? "quota met" : "quota NOT met"}
                 </span>
               </div>
             </div>
 
-            <p className="mt-5 border-t hairline pt-3 font-mono text-[11px] text-ink/45">
+            <p className="mt-5 border-t hairline pt-3 font-mono text-[11px] text-ink/65">
               suiteSpecHash {shortHash(suiteSpecHash(suite))}
             </p>
           </section>

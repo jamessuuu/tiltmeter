@@ -59,7 +59,7 @@ const LIMITATIONS = [
 function Spec({ k, v }: { k: string; v: string }) {
   return (
     <div>
-      <dt className="text-[10.5px] uppercase tracking-[0.1em] text-ink/50">{k}</dt>
+      <dt className="text-[10.5px] uppercase tracking-[0.1em] text-ink/70">{k}</dt>
       <dd className="mt-1 font-mono text-xl font-semibold tabular-nums tracking-[-0.02em]">{v}</dd>
     </div>
   );
@@ -76,7 +76,7 @@ function Card({
 }) {
   return (
     <section className={`panel panel-hover p-6 ${className}`}>
-      <h2 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/55">{title}</h2>
+      <h2 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/70">{title}</h2>
       <div className="mt-3 text-[15px] leading-relaxed text-ink/75">{children}</div>
     </section>
   );
@@ -113,17 +113,17 @@ export default function MethodologyPage() {
             <h2 id="scorers-heading" className="text-2xl font-semibold tracking-[-0.02em]">
               The eight scorers
             </h2>
-            <span className="font-mono text-xs text-ink/50">deterministic only</span>
+            <span className="font-mono text-xs text-ink/70">deterministic only</span>
           </div>
           <div className="panel mt-6 overflow-hidden" data-surface="flat">
             <table className="w-full border-collapse text-left">
               <caption className="sr-only">Every scorer and the structural check it performs</caption>
               <thead>
                 <tr className="border-b hairline">
-                  <th scope="col" className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+                  <th scope="col" className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/70">
                     Scorer
                   </th>
-                  <th scope="col" className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+                  <th scope="col" className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/70">
                     What it checks
                   </th>
                 </tr>
@@ -148,7 +148,7 @@ export default function MethodologyPage() {
             <h2 id="presentations-heading" className="text-2xl font-semibold tracking-[-0.02em]">
               Presentation templates
             </h2>
-            <span className="font-mono text-xs tabular-nums text-ink/50">
+            <span className="font-mono text-xs tabular-nums text-ink/70">
               {presentations.length} committed
             </span>
           </div>
@@ -173,9 +173,9 @@ export default function MethodologyPage() {
                     into presentationHash — tool name and tool_choice are
                     identical across all four, so printing them on every card
                     was four repetitions of one fact. */}
-                <p className="mt-4 flex items-baseline justify-between gap-3 border-t hairline pt-3 font-mono text-[11px] text-ink/45">
+                <p className="mt-4 flex items-baseline justify-between gap-3 border-t hairline pt-3 font-mono text-[11px] text-ink/65">
                   <span>system block</span>
-                  <span className="tabular-nums text-ink/60">
+                  <span className="tabular-nums text-ink/75">
                     {p.system.length.toLocaleString("en-US")} chars
                   </span>
                 </p>

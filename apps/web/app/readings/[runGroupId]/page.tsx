@@ -34,11 +34,11 @@ export default async function ReadingPage({ params }: { params: Promise<{ runGro
         <div className="ambient border-b hairline">
           <div className="mx-auto max-w-5xl px-6 pb-12 pt-14">
             <div className="flex items-center gap-3 rise">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/50">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/70">
                 Readings
               </span>
               <span className="h-px flex-1 bg-rule" aria-hidden="true" />
-              <span className="font-mono text-[11px] text-ink/45">none taken</span>
+              <span className="font-mono text-[11px] text-ink/65">none taken</span>
             </div>
             <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl rise rise-2">
               Readings
@@ -56,7 +56,7 @@ export default async function ReadingPage({ params }: { params: Promise<{ runGro
         </div>
         <div className="mx-auto max-w-5xl px-6 pb-24">
           <div className="panel mt-12 p-6 sm:p-7">
-            <h2 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/70">
               What has happened instead
             </h2>
             <p className="mt-3 max-w-[66ch] text-[15px] leading-relaxed text-ink/70">
@@ -92,17 +92,17 @@ export default async function ReadingPage({ params }: { params: Promise<{ runGro
               {reading.suiteId} × {reading.cellId}
             </h2>
             <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm max-w-md">
-              <dt className="text-ink/60">Status</dt>
+              <dt className="text-ink/75">Status</dt>
               <dd>{reading.status}</dd>
-              <dt className="text-ink/60">Model resolved</dt>
+              <dt className="text-ink/75">Model resolved</dt>
               <dd>{reading.axes.modelIdResolved}</dd>
-              <dt className="text-ink/60">Completeness</dt>
+              <dt className="text-ink/75">Completeness</dt>
               <dd>
                 {reading.completeness.ok}/{reading.completeness.expectedTrials} ok, {reading.completeness.noResult} noResult
               </dd>
-              <dt className="text-ink/60">Cost (actual)</dt>
+              <dt className="text-ink/75">Cost (actual)</dt>
               <dd>{reading.cost !== undefined ? `$${reading.cost.actualUsd.toFixed(4)}` : "—"}</dd>
-              <dt className="text-ink/60">suiteSpecHash</dt>
+              <dt className="text-ink/75">suiteSpecHash</dt>
               <dd className="font-mono">{shortHash(reading.axes.suiteSpecHash)}</dd>
             </dl>
 
@@ -125,7 +125,7 @@ export default async function ReadingPage({ params }: { params: Promise<{ runGro
               </tbody>
             </table>
 
-            <p className="mt-3 text-xs text-ink/60">
+            <p className="mt-3 text-xs text-ink/75">
               Reproduce: <code>tiltmeter run --plan {reading.runGroupId}</code>
             </p>
           </section>

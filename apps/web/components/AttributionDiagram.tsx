@@ -16,7 +16,7 @@ export function AttributionDiagram() {
     <figure className="mt-4" data-testid="attribution-diagram">
       {/* Committed, build-time-only SVG (scripts/diagram.mjs output) — never user input. */}
       <div className="border hairline p-4 bg-white/40 overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />
-      <figcaption className="mt-2 text-xs text-ink/60 max-w-prose">
+      <figcaption className="mt-2 text-xs text-ink/75 max-w-prose">
         Two readings compared on the five-element axis tuple (suite, model, runner, presentation, sampling).
         Change exactly one and the comparison resolves to a verdict. Change two — a suite edit landing in the
         same window as a model release, the one case an operator actually has to untangle — and the comparison

@@ -38,11 +38,11 @@ export default function ModelsPage() {
       <div className="ambient border-b hairline">
         <div className="mx-auto max-w-5xl px-6 pb-12 pt-14">
           <div className="flex items-center gap-3 rise">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/50">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/70">
               The panel
             </span>
             <span className="h-px flex-1 bg-rule" aria-hidden="true" />
-            <span className="font-mono text-[11px] text-ink/45">death-condition guard</span>
+            <span className="font-mono text-[11px] text-ink/65">death-condition guard</span>
           </div>
           <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl rise rise-2">Models</h1>
           <p
@@ -71,25 +71,25 @@ export default function ModelsPage() {
               <tr className="border-b hairline">
                 <th
                   scope="col"
-                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/55"
+                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/70"
                 >
                   Model
                 </th>
                 <th
                   scope="col"
-                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/55"
+                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/70"
                 >
                   Panel role
                 </th>
                 <th
                   scope="col"
-                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/55"
+                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/70"
                 >
                   Released
                 </th>
                 <th
                   scope="col"
-                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/55"
+                  className="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/70"
                 >
                   Source
                 </th>
@@ -106,7 +106,9 @@ export default function ModelsPage() {
                     <td className="px-5 py-4 align-middle">
                       <span
                         className={`rounded-full px-2.5 py-1 font-mono text-[11px] ${
-                          entry.role === "null" ? "bg-amber/15 text-amber" : "bg-ink/6 text-ink/70"
+                          entry.role === "null"
+                            ? "text-amber ring-1 ring-amber/40"
+                            : "bg-ink/6 text-ink/70"
                         }`}
                       >
                         {entry.role}
@@ -136,7 +138,7 @@ export default function ModelsPage() {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="well p-5">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+            <h2 className="text-[12px] font-semibold uppercase tracking-[0.09em] text-ink/70">
               The null role
             </h2>
             <p className="mt-2 text-[14px] leading-relaxed text-ink/70">
@@ -146,7 +148,7 @@ export default function ModelsPage() {
             </p>
           </div>
           <div className="well p-5">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+            <h2 className="text-[12px] font-semibold uppercase tracking-[0.09em] text-ink/70">
               Alias substitution
             </h2>
             <p className="mt-2 text-[14px] leading-relaxed text-ink/70">

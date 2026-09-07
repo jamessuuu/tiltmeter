@@ -43,9 +43,9 @@ export default function HomePage() {
       <div className="ambient border-b hairline">
         <div className="mx-auto max-w-5xl px-6 pb-16 pt-14 sm:pt-20">
           <div className="flex items-center gap-3 rise">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ink/55">tiltmeter</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ink/70">tiltmeter</p>
             <span className="h-px flex-1 bg-rule" aria-hidden="true" />
-            <span className="font-mono text-[11px] text-ink/45">pre-release · {LAUNCH_DATE}</span>
+            <span className="font-mono text-[11px] text-ink/65">pre-release · {LAUNCH_DATE}</span>
           </div>
 
           <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] lg:gap-14">
@@ -76,7 +76,7 @@ export default function HomePage() {
                 ].map((chip) => (
                   <span
                     key={chip}
-                    className="well px-3 py-1.5 font-mono text-[11.5px] tracking-tight text-ink/65"
+                    className="well px-3 py-1.5 font-mono text-[11.5px] tracking-tight text-ink/75"
                   >
                     {chip}
                   </span>
@@ -103,7 +103,7 @@ export default function HomePage() {
             <Link
               href="/methodology"
               prefetch={false}
-              className="inline-flex items-center py-1 font-mono text-xs text-ink/55 underline decoration-rule underline-offset-4 hover:text-amber"
+              className="inline-flex items-center py-1 font-mono text-xs text-ink/70 underline decoration-rule underline-offset-4 hover:text-amber"
             >
               methodology →
             </Link>
@@ -155,7 +155,7 @@ export default function HomePage() {
             <h2 id="suites-heading" className="text-2xl font-semibold tracking-[-0.02em]">
               The four launch suites
             </h2>
-            <span className="font-mono text-xs tabular-nums text-ink/50">
+            <span className="font-mono text-xs tabular-nums text-ink/70">
               {itemCount} items · {negativeCount} negative ({negativePct}%)
             </span>
           </div>
@@ -168,8 +168,8 @@ export default function HomePage() {
           <SuiteGrid suites={suites} />
 
           <details className="group mt-6">
-            <summary className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-amber">
-              <CaretRight className="text-ink/45 transition-transform group-open:rotate-90" />
+            <summary className="inline-flex items-center gap-2 text-sm text-ink/75 hover:text-amber">
+              <CaretRight className="text-ink/65 transition-transform group-open:rotate-90" />
               How pre-registration is checked, not claimed
             </summary>
             <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -195,7 +195,7 @@ export default function HomePage() {
               items. There is no time series yet — that is what pre-registration means. The series starts
               here.
             </p>
-            <p className="mt-4 max-w-[64ch] text-sm text-ink/60">
+            <p className="mt-4 max-w-[64ch] text-sm text-ink/75">
               The first run group spends real money and is a deliberate, gated step. Until it is taken, the
               schedule keeps publishing what it did instead — {records.length} records so far, priced
               against a pricing manifest fetched {pricing.fetchedAt}.

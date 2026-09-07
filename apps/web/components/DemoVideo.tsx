@@ -40,7 +40,7 @@ export function DemoVideo() {
           </p>
         </div>
       </div>
-      <figcaption className="mt-2 text-xs text-ink/60 max-w-prose">
+      <figcaption className="mt-2 text-xs text-ink/75 max-w-prose">
         A scripted run against the real deployed site (not a screen capture): the landing page, then{" "}
         <a href="/models" className="inline-block py-1 underline hover:text-amber">
           /models

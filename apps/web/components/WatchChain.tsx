@@ -30,7 +30,7 @@ function ChainRow({ record, index }: { record: RunGroupRecord; index: number }) 
       />
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="font-mono text-sm font-semibold tabular-nums">{entry.runGroupId}</span>
-        <span className="text-xs text-ink/50 tabular-nums">{isoDate(entry.at)}</span>
+        <span className="text-xs text-ink/70 tabular-nums">{isoDate(entry.at)}</span>
         <span className="rounded-full bg-ink/6 px-2 py-[2px] font-mono text-[11px] text-ink/70">
           {entry.status}
         </span>
@@ -46,7 +46,7 @@ function ChainRow({ record, index }: { record: RunGroupRecord; index: number }) 
           </>
         ) : null}
       </p>
-      <p className="mt-1 font-mono text-[11px] text-ink/40">
+      <p className="mt-1 font-mono text-[11px] text-ink/65">
         {prevHashShort === undefined ? "genesis" : `${prevHashShort} →`} {hashShort}
       </p>
     </li>
@@ -66,7 +66,7 @@ export function WatchChain({ records }: { records: RunGroupRecord[] }) {
         <h2 id="watch-heading" className="text-2xl font-semibold tracking-[-0.02em]">
           The schedule has already run {records.length} times
         </h2>
-        <span className="font-mono text-xs text-ink/50">
+        <span className="font-mono text-xs text-ink/70">
           {unbroken ? "chain verified unbroken at build" : "CHAIN BROKEN"}
         </span>
       </div>
@@ -86,7 +86,7 @@ export function WatchChain({ records }: { records: RunGroupRecord[] }) {
 
         {shift !== undefined ? (
           <div className="panel panel-hover p-6 sm:p-7 rise rise-3">
-            <h3 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/55">
+            <h3 className="text-[13px] font-semibold uppercase tracking-[0.09em] text-ink/70">
               What it caught while waiting
             </h3>
             <p className="mt-3 text-[15px] leading-relaxed text-ink/70">
@@ -96,19 +96,19 @@ export function WatchChain({ records }: { records: RunGroupRecord[] }) {
             </p>
             <div className="mt-6 flex items-end gap-4">
               <div>
-                <div className="font-mono text-3xl font-semibold tabular-nums tracking-[-0.03em] text-ink/40 line-through decoration-ink/30 decoration-1">
+                <div className="font-mono text-3xl font-semibold tabular-nums tracking-[-0.03em] text-ink/65 line-through decoration-ink/30 decoration-1">
                   {usd(shift.fromUsd)}
                 </div>
-                <div className="mt-1 font-mono text-[11px] text-ink/45">{shift.fromRunGroupId}</div>
+                <div className="mt-1 font-mono text-[11px] text-ink/65">{shift.fromRunGroupId}</div>
               </div>
-              <div className="pb-3 text-ink/35">
+              <div className="pb-3 text-ink/65">
                 <ArrowRight />
               </div>
               <div>
                 <div className="font-mono text-4xl font-semibold tabular-nums tracking-[-0.035em] text-amber">
                   {usd(shift.toUsd)}
                 </div>
-                <div className="mt-1 font-mono text-[11px] text-ink/45">{shift.toRunGroupId}</div>
+                <div className="mt-1 font-mono text-[11px] text-ink/65">{shift.toRunGroupId}</div>
               </div>
             </div>
             <p className="mt-5 text-sm text-ink/65">
@@ -119,7 +119,7 @@ export function WatchChain({ records }: { records: RunGroupRecord[] }) {
               manifest, not from a hardcoded rate.
             </p>
             {plan !== undefined ? (
-              <p className="mt-4 border-t hairline pt-4 font-mono text-[11px] leading-relaxed text-ink/50">
+              <p className="mt-4 border-t hairline pt-4 font-mono text-[11px] leading-relaxed text-ink/70">
                 caps ${plan.caps.maxCellUsd.toFixed(2)}/cell · ${plan.caps.maxRunUsd.toFixed(2)}/run · $
                 {plan.caps.maxMonthUsd.toFixed(2)}/month
                 <br />

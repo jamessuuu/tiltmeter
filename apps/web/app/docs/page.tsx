@@ -39,13 +39,13 @@ export default function DocsPage() {
 
       <div className="mx-auto grid max-w-6xl gap-12 px-6 pb-24 lg:grid-cols-[200px_minmax(0,1fr)]">
         <nav aria-label="Sections" className="lg:sticky lg:top-8 lg:self-start">
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink/45">On this page</p>
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink/65">On this page</p>
           <ul className="mt-3 flex flex-col gap-0.5 border-l hairline">
             {SECTIONS.map((s) => (
               <li key={s.id}>
                 <a
                   href={`#${s.id}`}
-                  className="-ml-px block border-l-2 border-transparent py-1.5 pl-3 text-[13.5px] text-ink/60 hover:border-amber hover:text-amber"
+                  className="-ml-px block border-l-2 border-transparent py-1.5 pl-3 text-[13.5px] text-ink/75 hover:border-amber hover:text-amber"
                 >
                   {s.label}
                 </a>
