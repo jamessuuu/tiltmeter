@@ -24,6 +24,10 @@ const BASE_URL = `http://127.0.0.1:${String(PORT)}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Proves the server on E2E_PORT is actually this project before any test
+  // runs — see e2e/global-setup.ts for the cross-project contamination this
+  // exists to make impossible.
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
