@@ -11,6 +11,7 @@ import { DemoVideo } from "@/components/DemoVideo";
 import { CalibrationGates, CalibrationReadout } from "@/components/CalibrationGates";
 import { WatchChain } from "@/components/WatchChain";
 import { SuiteGrid } from "@/components/SuiteGrid";
+import { CaretRight } from "@/components/Marks";
 
 // SPEC §7: every route statically prerendered — Next.js itself refuses to
 // build this page if anything makes it dynamic.
@@ -168,7 +169,7 @@ export default function HomePage() {
 
           <details className="group mt-6">
             <summary className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-amber">
-              <span className="font-mono text-xs transition-transform group-open:rotate-90">▸</span>
+              <CaretRight className="text-ink/45 transition-transform group-open:rotate-90" />
               How pre-registration is checked, not claimed
             </summary>
             <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

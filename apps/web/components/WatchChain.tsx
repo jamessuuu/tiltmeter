@@ -6,6 +6,7 @@ import {
   usd,
   type RunGroupRecord,
 } from "@/lib/watch";
+import { ArrowRight } from "@/components/Marks";
 
 /**
  * What the schedule has actually done (2026-09-07). This section did not
@@ -100,8 +101,8 @@ export function WatchChain({ records }: { records: RunGroupRecord[] }) {
                 </div>
                 <div className="mt-1 font-mono text-[11px] text-ink/45">{shift.fromRunGroupId}</div>
               </div>
-              <div className="pb-2 text-ink/35" aria-hidden="true">
-                →
+              <div className="pb-3 text-ink/35">
+                <ArrowRight />
               </div>
               <div>
                 <div className="font-mono text-4xl font-semibold tabular-nums tracking-[-0.035em] text-amber">
