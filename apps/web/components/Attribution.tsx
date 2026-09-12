@@ -1,5 +1,6 @@
 /**
- * attribution-kit v1 — React. Vendored from ~/.claude/harness-dist/attribution/Attribution.tsx; re-copy, do not
+ * attribution-kit v1 — React, plus the canonical author line (rel="author me" portfolio, rel="me" profiles).
+ * Vendored from ~/.claude/harness-dist/attribution/Attribution.tsx; if you re-copy, keep the author line. Do not
  * hand-edit. Server-component safe (no hooks, no client state), so Next.js renders it into the HTML the crawler sees.
  *
  * Needs the six rules in attribution.css in the project's stylesheet. The mark draws in `currentColor` and takes
@@ -11,6 +12,8 @@ export const ATTRIBUTION = {
   name: "James Lorenz Santos",
   portfolio: "https://agentjames.vercel.app",
   linkedin: "https://www.linkedin.com/in/james-lorenz-santos-720776251/",
+  onlinejobs: "https://www.onlinejobs.ph/jobseekers/info/2766463",
+  jobstreet: "https://ph.jobstreet.com/profiles/jameslorenz-santos-SXdpKyGqdK",
 } as const;
 
 /** The Agent James chip mark. Two drawings of one identity: below 40px the mark-16 drawing, at 40px and up the full one. */
@@ -58,14 +61,27 @@ export function Attribution({
     <p className={rootCls}>
       <AgentJamesMark size={size} />
       Built by{" "}
-      <a href={ATTRIBUTION.portfolio} rel="me noopener" className={linkClassName}>
+      <a href={ATTRIBUTION.portfolio} rel="author me" className={linkClassName}>
         {ATTRIBUTION.name}
+      </a>
+      , agentic engineer
+      <span className="aj-attribution__sep" aria-hidden="true">
+        &middot;
+      </span>
+      <a href={ATTRIBUTION.linkedin} rel="me" className={linkClassName}>
+        LinkedIn
       </a>
       <span className="aj-attribution__sep" aria-hidden="true">
         &middot;
       </span>
-      <a href={ATTRIBUTION.linkedin} rel="me noopener" target="_blank" className={linkClassName}>
-        LinkedIn
+      <a href={ATTRIBUTION.onlinejobs} rel="me" className={linkClassName}>
+        OnlineJobs.ph
+      </a>
+      <span className="aj-attribution__sep" aria-hidden="true">
+        &middot;
+      </span>
+      <a href={ATTRIBUTION.jobstreet} rel="me" className={linkClassName}>
+        JobStreet
       </a>
     </p>
   );
