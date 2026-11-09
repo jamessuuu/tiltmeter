@@ -154,5 +154,17 @@
     "runGroupId": "rg-20261102-1",
     "runnerBehaviorVersion": 1,
     "status": "skipped"
+  },
+  {
+    "at": "2026-11-09T10:54:22.615Z",
+    "cells": [],
+    "costUsd": 0,
+    "harnessCommit": "be66018d161c27b5e8cae95c1ffef97568317cf3",
+    "hash": "sha256:d86651815ffb93d5234bc520f2e5371a43311d930e7249ccc0eb993c29390205",
+    "prevHash": "sha256:79729eca2da095bed9de2c6c5886b0f661a2f53596580a7b36de147ef9479a57",
+    "reason": "ANTHROPIC_API_KEY not set",
+    "runGroupId": "rg-20261109-1",
+    "runnerBehaviorVersion": 1,
+    "status": "skipped"
   }
 ]
